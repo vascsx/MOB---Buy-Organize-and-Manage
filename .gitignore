@@ -1,0 +1,26 @@
+# Go
+/bin/
+/obj/
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+/*.test
+/vendor/
+/go.sum
+/go.mod
+
+# IDEs
+.vscode/
+.idea/
+
+# Node / Front-end
+node_modules/
+dist/
+build/
+*.log
+.env
+.DS_Store
+
+# OS
+Thumbs.db
