@@ -4,11 +4,17 @@ import IncomeForm from "./components/IncomeForm";
 import GastosTable from "./components/GastosTable";
 import ExpenseForm from "./components/ExpenseForm";
 import Charts from "./components/Charts";
+import AuthForm from "./components/AuthForm";
 import "./App.css";
 
 const API_URL = "http://localhost:8080";
 
+function getToken() {
+  return localStorage.getItem("token") || "";
+}
+
 function App() {
+  const [token, setToken] = useState(getToken());
   const [mes, setMes] = useState(new Date().getMonth());
   const [ano, setAno] = useState(new Date().getFullYear());
   const [gastos, setGastos] = useState([]);
@@ -20,12 +26,16 @@ function App() {
   async function atualizarDadosDoMes() {
     setErro("");
     try {
-      const respGastos = await fetch(`${API_URL}/gastos/${chaveMesAno}`);
+      const respGastos = await fetch(`${API_URL}/gastos/${chaveMesAno}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!respGastos.ok) throw new Error("Erro ao buscar gastos");
       const gastosMes = await respGastos.json();
       setGastos(gastosMes || []);
 
-      const respResumo = await fetch(`${API_URL}/resumo/${chaveMesAno}`);
+      const respResumo = await fetch(`${API_URL}/resumo/${chaveMesAno}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!respResumo.ok) throw new Error("Erro ao buscar resumo");
       const resumoData = await respResumo.json();
       setResumo(resumoData || { renda: 0, saldo: 0, totais: {} });
@@ -44,7 +54,10 @@ function App() {
   const removerGasto = async (i) => {
     if (!window.confirm("Tem certeza que deseja excluir este item?")) return;
     try {
-      await fetch(`${API_URL}/gasto/${chaveMesAno}/${i}`, { method: "DELETE" });
+      await fetch(`${API_URL}/gasto/${chaveMesAno}/${i}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
       atualizarDadosDoMes();
     } catch (e) {
       setErro("Erro ao remover gasto.");
@@ -55,11 +68,11 @@ function App() {
     try {
       await fetch(`${API_URL}/gasto/${chaveMesAno}/${i}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...novo,
-          valor: Number(novo.valor)
-        })
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...novo, valor: Number(novo.valor) })
       });
       atualizarDadosDoMes();
     } catch (e) {
@@ -67,8 +80,13 @@ function App() {
     }
   };
 
+  if (!token) {
+    return <AuthForm onAuth={tok => { setToken(tok); localStorage.setItem("token", tok); }} />;
+  }
+
   return (
     <div className="container">
+      <button style={{ float: "right", margin: 8 }} onClick={() => { setToken(""); localStorage.removeItem("token"); }}>Sair</button>
       {erro && <div style={{ color: "red", marginBottom: 16 }}>{erro}</div>}
       <Header mes={mes} setMes={setMes} ano={ano} setAno={setAno} />
       <div className="grid">

@@ -2,13 +2,20 @@ import { useState } from "react";
 export default function IncomeForm({ renda, setRenda, atualizarDadosDoMes }) {
   const [rendaInput, setRendaInput] = useState("");
 
+  function getToken() {
+    return localStorage.getItem("token") || "";
+  }
+
   const handleRendaSubmit = async (e) => {
     e.preventDefault();
     const valor = parseFloat(rendaInput);
     if (valor <= 0) return;
     await fetch(`http://localhost:8080/renda`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`
+      },
       body: JSON.stringify({ mesAno: `${new Date().getMonth()}-${new Date().getFullYear()}`, renda: valor })
     });
     setRendaInput("");
