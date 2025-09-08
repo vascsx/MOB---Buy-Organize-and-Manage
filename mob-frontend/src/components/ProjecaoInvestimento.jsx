@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
+import { Line } from "react-chartjs-2";
 
 const API_URL = "http://localhost:8080";
 
 export default function ProjecaoInvestimento() {
-  const [mostrarSimulacao, setMostrarSimulacao] = useState(false);
-  const [valorInicial, setValorInicial] = useState(1000);
-  const [aporteMensal, setAporteMensal] = useState(0);
-  const [taxaAno, setTaxaAno] = useState(10);
-  const [anos, setAnos] = useState(5);
-  const [aportesReais, setAportesReais] = useState([]); // [{mesAno, valor}]
+  const [taxaAno, setTaxaAno] = useState(10); // Único campo ajustável
+  const [aportesReais, setAportesReais] = useState([]); 
   const [erro, setErro] = useState("");
 
   useEffect(() => {
@@ -26,6 +23,7 @@ export default function ProjecaoInvestimento() {
   let totalAcao = 0, totalFixa = 0, totalCripto = 0;
   let mesesLabels = [];
   let detalhamento = [];
+  let aportes = [];
   if (aportesReais && aportesReais.length > 0) {
     mesesLabels = aportesReais.map(a => a.mesAno);
     detalhamento = aportesReais.map(a => {
@@ -41,6 +39,15 @@ export default function ProjecaoInvestimento() {
         total: a.total || 0
       };
     });
+    aportes = aportesReais.map(a => a.total || 0);
+  }
+
+  let saldo = 0;
+  const saldoPorMes = [];
+  const taxaMes = Math.pow(1 + taxaAno / 100, 1 / 12) - 1;
+  for (let i = 0; i < aportes.length; i++) {
+    saldo = saldo * (1 + taxaMes) + aportes[i];
+    saldoPorMes.push(saldo);
   }
 
   return (
@@ -78,33 +85,33 @@ export default function ProjecaoInvestimento() {
         Total investido: R$ {totalInvestido.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br/>
         Ação: R$ {totalAcao.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Renda Fixa: R$ {totalFixa.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | Cripto: R$ {totalCripto.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </div>
-      <button style={{marginTop:24}} onClick={() => setMostrarSimulacao(v => !v)}>
-        {mostrarSimulacao ? "Ocultar Simulação" : "Simular Projeção"}
-      </button>
-      {mostrarSimulacao && (
-        <div style={{marginTop:24}}>
-          <h4>Simulação de Projeção</h4>
-          <form className="row" style={{ gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            <div style={{display:'flex', flexDirection:'column', minWidth:140}}>
-              <label style={{fontSize:13, marginBottom:2}}>Valor inicial (R$)</label>
-              <input type="number" min="0" value={valorInicial} onChange={e => setValorInicial(e.target.value)} placeholder="Valor inicial" />
-            </div>
-            <div style={{display:'flex', flexDirection:'column', minWidth:140}}>
-              <label style={{fontSize:13, marginBottom:2}}>Aporte mensal (R$)</label>
-              <input type="number" min="0" value={aporteMensal} onChange={e => setAporteMensal(e.target.value)} placeholder="Aporte mensal" />
-            </div>
-            <div style={{display:'flex', flexDirection:'column', minWidth:140}}>
-              <label style={{fontSize:13, marginBottom:2}}>% ao ano</label>
-              <input type="number" min="0" value={taxaAno} onChange={e => setTaxaAno(e.target.value)} placeholder="% ao ano" />
-            </div>
-            <div style={{display:'flex', flexDirection:'column', minWidth:100}}>
-              <label style={{fontSize:13, marginBottom:2}}>Anos</label>
-              <input type="number" min="1" value={anos} onChange={e => setAnos(e.target.value)} placeholder="Anos" />
-            </div>
-          </form>
-          {/* Aqui pode-se adicionar o gráfico e projeção futura se desejar */}
+      <div style={{marginTop:32}}>
+        <h4>Projeção do saldo acumulado (base histórica)</h4>
+        <div style={{display:'flex', alignItems:'center', gap:16, flexWrap:'wrap'}}>
+          <label style={{fontSize:13}}>Taxa anual de rendimento (%):</label>
+          <input type="number" min="0" value={taxaAno} onChange={e => setTaxaAno(e.target.value)} style={{width:80}} />
         </div>
-      )}
+        <div style={{marginTop:16}}>
+          <Line
+            data={{
+              labels: mesesLabels,
+              datasets: [
+                {
+                  label: "Saldo acumulado",
+                  data: saldoPorMes,
+                  borderColor: "#16a34a",
+                  backgroundColor: "rgba(22,163,74,0.1)",
+                  fill: true,
+                  tension: 0.2
+                }
+              ]
+            }}
+          />
+        </div>
+        <div style={{marginTop:16, fontSize:15}}>
+          <b>Saldo final projetado:</b> R$ {saldoPorMes.length > 0 ? saldoPorMes[saldoPorMes.length-1].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00'}
+        </div>
+      </div>
     </div>
   );
 }
