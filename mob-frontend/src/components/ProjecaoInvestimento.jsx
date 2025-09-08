@@ -4,7 +4,7 @@ import { Line } from "react-chartjs-2";
 const API_URL = "http://localhost:8080";
 
 export default function ProjecaoInvestimento() {
-  const [taxaAno, setTaxaAno] = useState(10); // Único campo ajustável
+  const [taxaAno, setTaxaAno] = useState(10); 
   const [aportesReais, setAportesReais] = useState([]); 
   const [erro, setErro] = useState("");
 

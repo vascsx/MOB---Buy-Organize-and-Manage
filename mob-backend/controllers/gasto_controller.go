@@ -10,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Retorna o total de gastos por mês para o ano informado
 func GastosAnuais(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	ano := c.Param("ano")

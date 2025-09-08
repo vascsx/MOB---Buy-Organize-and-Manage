@@ -6,6 +6,7 @@ import ExpenseForm from "./components/ExpenseForm";
 import Charts from "./components/Charts";
 import AuthForm from "./components/AuthForm";
 import ProjecaoInvestimento from "./components/ProjecaoInvestimento";
+import ImpostosTab from "./components/ImpostosTab";
 import "./App.css";
 
 const API_URL = "http://localhost:8080";
@@ -86,12 +87,34 @@ function App() {
     return <AuthForm onAuth={tok => { setToken(tok); localStorage.setItem("token", tok); }} />;
   }
 
+  async function registrarImpostoComoGasto({ mesAno, categoria, descricao, valor }) {
+    try {
+      await fetch(`${API_URL}/gasto`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          mesAno,
+          categoria,
+          descricao,
+          valor: Number(valor)
+        })
+      });
+      atualizarDadosDoMes();
+    } catch (e) {
+      setErro("Erro ao registrar imposto como gasto.");
+    }
+  }
+
   return (
     <div className="container">
       <button style={{ float: "right", margin: 8 }} onClick={() => { setToken(""); localStorage.removeItem("token"); }}>Sair</button>
-      <nav style={{ marginBottom: 16 }}>
+      <nav style={{ marginBottom: 16, display: 'flex', gap: 12 }}>
         <button onClick={() => setTela("dashboard")}>Dashboard</button>
         <button onClick={() => setTela("projecao")}>Projeção de Investimento</button>
+        <button onClick={() => setTela("impostos")}>Impostos (MEI/ME)</button>
       </nav>
       {erro && <div style={{ color: "red", marginBottom: 16 }}>{erro}</div>}
       {tela === "dashboard" && <>
@@ -108,6 +131,7 @@ function App() {
         </div>
       </>}
       {tela === "projecao" && <ProjecaoInvestimento />}
+      {tela === "impostos" && <ImpostosTab onRegistrarGasto={registrarImpostoComoGasto} />}
       <footer>
         <p>Feito para você organizar suas finanças ✨</p>
       </footer>
