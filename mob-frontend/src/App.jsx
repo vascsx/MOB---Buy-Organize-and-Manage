@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import IncomeForm from "./components/IncomeForm";
 import GastosTable from "./components/GastosTable";
+import ExpenseForm from "./components/ExpenseForm";
 import Charts from "./components/Charts";
 import "./App.css";
 
@@ -39,6 +40,7 @@ function App() {
     atualizarDadosDoMes();
   }, [mes, ano]);
 
+
   const removerGasto = async (i) => {
     if (!window.confirm("Tem certeza que deseja excluir este item?")) return;
     try {
@@ -49,6 +51,22 @@ function App() {
     }
   };
 
+  const editarGasto = async (i, novo) => {
+    try {
+      await fetch(`${API_URL}/gasto/${chaveMesAno}/${i}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...novo,
+          valor: Number(novo.valor)
+        })
+      });
+      atualizarDadosDoMes();
+    } catch (e) {
+      setErro("Erro ao editar gasto.");
+    }
+  };
+
   return (
     <div className="container">
       {erro && <div style={{ color: "red", marginBottom: 16 }}>{erro}</div>}
@@ -56,7 +74,8 @@ function App() {
       <div className="grid">
         <div>
           <IncomeForm renda={resumo.renda} setRenda={valor => setResumo(r => ({ ...r, renda: valor }))} atualizarDadosDoMes={atualizarDadosDoMes} />
-          <GastosTable gastos={gastos} removerGasto={removerGasto} />
+          <ExpenseForm atualizarDados={atualizarDadosDoMes} mesAno={chaveMesAno} />
+          <GastosTable gastos={gastos} removerGasto={removerGasto} editarGasto={editarGasto} />
         </div>
         <div>
           <Charts resumo={resumo} />
