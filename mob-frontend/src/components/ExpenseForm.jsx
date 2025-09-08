@@ -7,13 +7,20 @@ export default function ExpenseForm({ atualizarDados, mesAno }) {
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
 
+  function getToken() {
+    return localStorage.getItem("token") || "";
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!categoria || !descricao || valor <= 0) return;
 
     await fetch(`${API_URL}/gasto`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getToken()}`
+      },
       body: JSON.stringify({ mesAno, categoria, descricao, valor: Number(valor) })
     });
 

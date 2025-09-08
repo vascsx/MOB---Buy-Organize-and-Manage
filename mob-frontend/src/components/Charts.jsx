@@ -10,7 +10,10 @@ export default function Charts({ resumo }) {
 
   useEffect(() => {
     const anoAtual = new Date().getFullYear();
-    fetch(`http://localhost:8080/gastos-anuais/${anoAtual}`)
+    const token = localStorage.getItem("token") || "";
+    fetch(`http://localhost:8080/gastos-anuais/${anoAtual}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
       .then(r => r.json())
       .then(data => {
         if (data && data.totais) setTotaisMensais(data.totais);

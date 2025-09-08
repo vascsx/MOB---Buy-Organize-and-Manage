@@ -1,9 +1,16 @@
 const API_URL = "http://localhost:8080";
 
 export default function ExpenseTable({ gastos, atualizarDados, mesAno }) {
+  function getToken() {
+    return localStorage.getItem("token") || "";
+  }
+
   const remover = async (index) => {
     if (!confirm("Tem certeza que deseja excluir este item?")) return;
-    await fetch(`${API_URL}/gasto/${mesAno}/${index}`, { method: "DELETE" });
+    await fetch(`${API_URL}/gasto/${mesAno}/${index}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${getToken()}` }
+    });
     atualizarDados();
   };
 
