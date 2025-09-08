@@ -1,28 +1,45 @@
 package main
 
 import (
+	"log"
 	"net/http"
-	"sync"
+
 	"github.com/gin-gonic/gin"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type Gasto struct {
+	ID        uint    `gorm:"primaryKey"`
 	Categoria string  `json:"categoria"`
 	Descricao string  `json:"descricao"`
 	Valor     float64 `json:"valor"`
+	MesDataID uint
 }
 
 type MesData struct {
+	ID     uint    `gorm:"primaryKey"`
+	MesAno string  `gorm:"uniqueIndex"`
 	Renda  float64 `json:"renda"`
-	Gastos []Gasto `json:"gastos"`
+	Gastos []Gasto `gorm:"foreignKey:MesDataID"`
 }
 
-var (
-	dados = make(map[string]*MesData)
-	mutex = &sync.Mutex{}
-)
+var db *gorm.DB
+
+func initDB() {
+	dsn := "host=localhost user=financeuser password=financepass dbname=finance port=5432 sslmode=disable"
+	var err error
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("Falha ao conectar no banco:", err)
+	}
+
+	db.AutoMigrate(&MesData{}, &Gasto{})
+}
 
 func main() {
+	initDB()
+
 	r := gin.Default()
 	r.Use(corsMiddleware())
 
@@ -58,12 +75,14 @@ func definirRenda(c *gin.Context) {
 		return
 	}
 
-	mutex.Lock()
-	defer mutex.Unlock()
-	if _, ok := dados[body.MesAno]; !ok {
-		dados[body.MesAno] = &MesData{}
+	var mes MesData
+	if err := db.Where("mes_ano = ?", body.MesAno).First(&mes).Error; err != nil {
+		mes = MesData{MesAno: body.MesAno, Renda: body.Renda}
+		db.Create(&mes)
+	} else {
+		db.Model(&mes).Update("Renda", body.Renda)
 	}
-	dados[body.MesAno].Renda = body.Renda
+
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -80,66 +99,66 @@ func adicionarGasto(c *gin.Context) {
 		return
 	}
 
-	mutex.Lock()
-	defer mutex.Unlock()
-	if _, ok := dados[body.MesAno]; !ok {
-		dados[body.MesAno] = &MesData{}
+	var mes MesData
+	if err := db.Where("mes_ano = ?", body.MesAno).First(&mes).Error; err != nil {
+		mes = MesData{MesAno: body.MesAno}
+		db.Create(&mes)
 	}
-	dados[body.MesAno].Gastos = append(dados[body.MesAno].Gastos, Gasto{
+
+	gasto := Gasto{
 		Categoria: body.Categoria,
 		Descricao: body.Descricao,
 		Valor:     body.Valor,
-	})
+		MesDataID: mes.ID,
+	}
 
+	db.Create(&gasto)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func listarGastos(c *gin.Context) {
 	mesAno := c.Param("mesAno")
-
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	if data, ok := dados[mesAno]; ok {
-		c.JSON(http.StatusOK, data.Gastos)
-	} else {
+	var mes MesData
+	if err := db.Preload("Gastos").Where("mes_ano = ?", mesAno).First(&mes).Error; err != nil {
 		c.JSON(http.StatusOK, []Gasto{})
+		return
 	}
+	c.JSON(http.StatusOK, mes.Gastos)
 }
 
 func resumoMes(c *gin.Context) {
 	mesAno := c.Param("mesAno")
-
-	mutex.Lock()
-	defer mutex.Unlock()
-
-	if data, ok := dados[mesAno]; ok {
-		totais := map[string]float64{
-			"Custo Fixo":     0,
-			"Custo Variável": 0,
-			"Reserva":        0,
-			"Investimento":   0,
-		}
-		for _, g := range data.Gastos {
-			totais[g.Categoria] += g.Valor
-		}
-		saldo := data.Renda
-		for _, v := range totais {
-			saldo -= v
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"renda":  data.Renda,
-			"totais": totais,
-			"saldo":  saldo,
-			"gastos": data.Gastos,
-		})
-	} else {
+	var mes MesData
+	if err := db.Preload("Gastos").Where("mes_ano = ?", mesAno).First(&mes).Error; err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"renda":  0,
 			"totais": map[string]float64{},
 			"saldo":  0,
 			"gastos": []Gasto{},
 		})
+		return
 	}
+
+	totais := map[string]float64{
+		"Custo Fixo":     0,
+		"Custo Variável": 0,
+		"Reserva":        0,
+		"Investimento":   0,
+	}
+
+	for _, g := range mes.Gastos {
+		totais[g.Categoria] += g.Valor
+	}
+
+	saldo := mes.Renda
+	for _, v := range totais {
+		saldo -= v
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"renda":  mes.Renda,
+		"totais": totais,
+		"saldo":  saldo,
+		"gastos": mes.Gastos,
+	})
 }

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: finance-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: financeuser
+      POSTGRES_PASSWORD: financepass
+      POSTGRES_DB: finance
+    ports:
+      - "5432:5432"
+    volumes:
+      - finance-data:/var/lib/postgresql/data
+
+  backend:
+    build: ./finance-backend
+    container_name: finance-backend
+    restart: on-failure
+    environment:
+      DB_HOST: postgres
+      DB_USER: financeuser
+      DB_PASSWORD: financepass
+      DB_NAME: finance
+      DB_PORT: 5432
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+
+volumes:
+  finance-data:
