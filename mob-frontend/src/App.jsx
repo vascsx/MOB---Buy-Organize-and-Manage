@@ -5,6 +5,7 @@ import GastosTable from "./components/GastosTable";
 import ExpenseForm from "./components/ExpenseForm";
 import Charts from "./components/Charts";
 import AuthForm from "./components/AuthForm";
+import ProjecaoInvestimento from "./components/ProjecaoInvestimento";
 import "./App.css";
 
 const API_URL = "http://localhost:8080";
@@ -15,13 +16,14 @@ function getToken() {
 
 function App() {
   const [token, setToken] = useState(getToken());
+  const [tela, setTela] = useState("dashboard");
   const [mes, setMes] = useState(new Date().getMonth());
   const [ano, setAno] = useState(new Date().getFullYear());
   const [gastos, setGastos] = useState([]);
   const [resumo, setResumo] = useState({ renda: 0, saldo: 0, totais: {} });
   const [erro, setErro] = useState("");
 
-  const chaveMesAno = `${mes}-${ano}`;
+  const chaveMesAno = `${(mes+1).toString().padStart(2,'0')}-${ano}`;
 
   async function atualizarDadosDoMes() {
     setErro("");
@@ -87,18 +89,25 @@ function App() {
   return (
     <div className="container">
       <button style={{ float: "right", margin: 8 }} onClick={() => { setToken(""); localStorage.removeItem("token"); }}>Sair</button>
+      <nav style={{ marginBottom: 16 }}>
+        <button onClick={() => setTela("dashboard")}>Dashboard</button>
+        <button onClick={() => setTela("projecao")}>Projeção de Investimento</button>
+      </nav>
       {erro && <div style={{ color: "red", marginBottom: 16 }}>{erro}</div>}
-      <Header mes={mes} setMes={setMes} ano={ano} setAno={setAno} />
-      <div className="grid">
-        <div>
-          <IncomeForm renda={resumo.renda} setRenda={valor => setResumo(r => ({ ...r, renda: valor }))} atualizarDadosDoMes={atualizarDadosDoMes} />
-          <ExpenseForm atualizarDados={atualizarDadosDoMes} mesAno={chaveMesAno} />
-          <GastosTable gastos={gastos} removerGasto={removerGasto} editarGasto={editarGasto} />
+      {tela === "dashboard" && <>
+        <Header mes={mes} setMes={setMes} ano={ano} setAno={setAno} />
+        <div className="grid">
+          <div>
+            <IncomeForm renda={resumo.renda} setRenda={valor => setResumo(r => ({ ...r, renda: valor }))} atualizarDadosDoMes={atualizarDadosDoMes} />
+            <ExpenseForm atualizarDados={atualizarDadosDoMes} mesAno={chaveMesAno} />
+            <GastosTable gastos={gastos} removerGasto={removerGasto} editarGasto={editarGasto} />
+          </div>
+          <div>
+            <Charts resumo={resumo} />
+          </div>
         </div>
-        <div>
-          <Charts resumo={resumo} />
-        </div>
-      </div>
+      </>}
+      {tela === "projecao" && <ProjecaoInvestimento />}
       <footer>
         <p>Feito para você organizar suas finanças ✨</p>
       </footer>

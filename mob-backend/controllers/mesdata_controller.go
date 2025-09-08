@@ -3,10 +3,51 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"finance-backend/config"
 	"finance-backend/models"
+
+	"github.com/gin-gonic/gin"
 )
+
+func InvestimentosPorMes(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	var meses []models.MesData
+	if err := config.DB.Preload("Gastos").Where("user_id = ?", userID).Order("mes_ano").Find(&meses).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var investimentos []gin.H
+	for _, mes := range meses {
+		var acao, fixa, cripto float64
+		for _, g := range mes.Gastos {
+			if g.Categoria == "Investimento" {
+				desc := g.Descricao
+				switch {
+				case len(desc) >= 4 && (desc[:4] == "acao" || desc[:4] == "Ação" || desc[:4] == "AÇÃo" || desc[:4] == "ação"):
+					acao += g.Valor
+				case len(desc) >= 4 && (desc[:4] == "fixa" || desc[:4] == "Fixa"):
+					fixa += g.Valor
+				case len(desc) >= 6 && (desc[:6] == "cripto" || desc[:6] == "Cripto"):
+					cripto += g.Valor
+				default:
+					fixa += g.Valor
+				}
+			}
+		}
+		total := acao + fixa + cripto
+		if total > 0 {
+			investimentos = append(investimentos, gin.H{
+				"mesAno": mes.MesAno,
+				"acao":   acao,
+				"fixa":   fixa,
+				"cripto": cripto,
+				"total":  total,
+			})
+		}
+	}
+	c.JSON(http.StatusOK, investimentos)
+}
 
 func DefinirRenda(c *gin.Context) {
 	userID := c.GetUint("user_id")

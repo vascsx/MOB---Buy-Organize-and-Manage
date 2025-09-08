@@ -18,6 +18,8 @@ func SetupRoutes(r *gin.Engine) {
 		auth.POST("/gasto", controllers.AdicionarGasto)
 		auth.GET("/gastos/:mesAno", controllers.ListarGastos)
 		auth.GET("/resumo/:mesAno", controllers.ResumoMes)
+		auth.GET("/investimentos", controllers.InvestimentosPorMes)
+		auth.GET("/gastos-anuais/:ano", controllers.GastosAnuais)
 		auth.DELETE("/gasto/:mesAno/:index", controllers.RemoverGasto)
 	}
 }

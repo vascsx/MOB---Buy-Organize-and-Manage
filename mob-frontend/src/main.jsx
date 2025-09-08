@@ -1,5 +1,18 @@
-import { Chart, ArcElement, BarElement, CategoryScale, LinearScale, Legend, Tooltip } from "chart.js";
-Chart.register(ArcElement, BarElement, CategoryScale, LinearScale, Legend, Tooltip);
+import { Chart, LineElement, PointElement, LineController, CategoryScale, LinearScale, BarElement, ArcElement, BarController, PieController, DoughnutController, Legend, Tooltip } from "chart.js";
+Chart.register(
+  LineElement,
+  PointElement,
+  LineController,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  ArcElement,
+  BarController,
+  PieController,
+  DoughnutController,
+  Legend,
+  Tooltip
+);
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";

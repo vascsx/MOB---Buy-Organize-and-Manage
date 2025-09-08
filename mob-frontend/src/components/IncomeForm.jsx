@@ -10,13 +10,15 @@ export default function IncomeForm({ renda, setRenda, atualizarDadosDoMes }) {
     e.preventDefault();
     const valor = parseFloat(rendaInput);
     if (valor <= 0) return;
+    const now = new Date();
+    const mesAno = `${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getFullYear()}`;
     await fetch(`http://localhost:8080/renda`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${getToken()}`
       },
-      body: JSON.stringify({ mesAno: `${new Date().getMonth()}-${new Date().getFullYear()}`, renda: valor })
+      body: JSON.stringify({ mesAno, renda: valor })
     });
     setRendaInput("");
     atualizarDadosDoMes();
