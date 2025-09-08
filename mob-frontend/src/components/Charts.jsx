@@ -1,13 +1,26 @@
 import { Pie, Doughnut, Bar } from "react-chartjs-2";
+import { useEffect, useState } from "react";
 
 export default function Charts({ resumo }) {
   const categorias = Object.keys(resumo.totais || {});
   const valores = Object.values(resumo.totais || {});
   const totalGastos = valores.reduce((a,b) => a+b, 0);
 
+  const [totaisMensais, setTotaisMensais] = useState(Array(12).fill(0));
+
+  useEffect(() => {
+    const anoAtual = new Date().getFullYear();
+    fetch(`http://localhost:8080/gastos-anuais/${anoAtual}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.totais) setTotaisMensais(data.totais);
+      });
+  }, []);
+
   const pieData = { labels: categorias, datasets: [{ data: valores, backgroundColor: ["#7c3aed","#3b82f6","#16a34a","#f59e0b"] }] };
   const doughnutData = { labels: ["Renda","Gastos"], datasets: [{ data: [resumo.renda,totalGastos], backgroundColor:["#10b981","#ef4444"] }] };
-  const barData = { labels: categorias, datasets: [{ label: "Gastos", data: valores, backgroundColor: ["#7c3aed","#3b82f6","#16a34a","#f59e0b"] }] };
+  const meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  const barData = { labels: meses, datasets: [{ label: "Total de Gastos", data: totaisMensais, backgroundColor: "#3b82f6" }] };
 
   return (
     <div className="card">

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
@@ -44,29 +44,28 @@ func main() {
 	r := gin.Default()
 	r.Use(corsMiddleware())
 
-
 	r.POST("/renda", definirRenda)
 	r.POST("/gasto", adicionarGasto)
 	r.GET("/gastos/:mesAno", listarGastos)
 	r.GET("/resumo/:mesAno", resumoMes)
 	r.DELETE("/gasto/:mesAno/:index", removerGasto)
 	r.PUT("/gasto/:mesAno/:index", editarGasto)
-
+	r.GET("/gastos-anuais/:ano", totaisGastosAno)
 
 	r.Run(":8080")
 }
 
 func corsMiddleware() gin.HandlerFunc {
-       return func(c *gin.Context) {
-	       c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	       c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	       c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
-	       if c.Request.Method == "OPTIONS" {
-		       c.AbortWithStatus(200)
-		       return
-	       }
-	       c.Next()
-       }
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(200)
+			return
+		}
+		c.Next()
+	}
 }
 
 func definirRenda(c *gin.Context) {
@@ -121,65 +120,63 @@ func adicionarGasto(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// Edita um gasto existente pelo índice na lista de gastos do mês
 func editarGasto(c *gin.Context) {
-       mesAno := c.Param("mesAno")
-       indexStr := c.Param("index")
-       var index int
-       if _, err := fmt.Sscanf(indexStr, "%d", &index); err != nil {
-	       c.JSON(http.StatusBadRequest, gin.H{"error": "Índice inválido"})
-	       return
-       }
+	mesAno := c.Param("mesAno")
+	indexStr := c.Param("index")
+	var index int
+	if _, err := fmt.Sscanf(indexStr, "%d", &index); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Índice inválido"})
+		return
+	}
 
-       var body struct {
-	       Categoria string  `json:"categoria"`
-	       Descricao string  `json:"descricao"`
-	       Valor     float64 `json:"valor"`
-       }
-       if err := c.ShouldBindJSON(&body); err != nil {
-	       c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	       return
-       }
+	var body struct {
+		Categoria string  `json:"categoria"`
+		Descricao string  `json:"descricao"`
+		Valor     float64 `json:"valor"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-       var mes MesData
-       if err := db.Preload("Gastos").Where("mes_ano = ?", mesAno).First(&mes).Error; err != nil {
-	       c.JSON(http.StatusNotFound, gin.H{"error": "Mês não encontrado"})
-	       return
-       }
-       if index < 0 || index >= len(mes.Gastos) {
-	       c.JSON(http.StatusBadRequest, gin.H{"error": "Índice fora do intervalo"})
-	       return
-       }
-       gasto := &mes.Gastos[index]
-       gasto.Categoria = body.Categoria
-       gasto.Descricao = body.Descricao
-       gasto.Valor = body.Valor
-       db.Save(gasto)
-       c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	var mes MesData
+	if err := db.Preload("Gastos").Where("mes_ano = ?", mesAno).First(&mes).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Mês não encontrado"})
+		return
+	}
+	if index < 0 || index >= len(mes.Gastos) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Índice fora do intervalo"})
+		return
+	}
+	gasto := &mes.Gastos[index]
+	gasto.Categoria = body.Categoria
+	gasto.Descricao = body.Descricao
+	gasto.Valor = body.Valor
+	db.Save(gasto)
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-
 func removerGasto(c *gin.Context) {
-       mesAno := c.Param("mesAno")
-       indexStr := c.Param("index")
-       var index int
-       if _, err := fmt.Sscanf(indexStr, "%d", &index); err != nil {
-	       c.JSON(http.StatusBadRequest, gin.H{"error": "Índice inválido"})
-	       return
-       }
+	mesAno := c.Param("mesAno")
+	indexStr := c.Param("index")
+	var index int
+	if _, err := fmt.Sscanf(indexStr, "%d", &index); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Índice inválido"})
+		return
+	}
 
-       var mes MesData
-       if err := db.Preload("Gastos").Where("mes_ano = ?", mesAno).First(&mes).Error; err != nil {
-	       c.JSON(http.StatusNotFound, gin.H{"error": "Mês não encontrado"})
-	       return
-       }
-       if index < 0 || index >= len(mes.Gastos) {
-	       c.JSON(http.StatusBadRequest, gin.H{"error": "Índice fora do intervalo"})
-	       return
-       }
-       gasto := mes.Gastos[index]
-       db.Delete(&gasto)
-       c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	var mes MesData
+	if err := db.Preload("Gastos").Where("mes_ano = ?", mesAno).First(&mes).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Mês não encontrado"})
+		return
+	}
+	if index < 0 || index >= len(mes.Gastos) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Índice fora do intervalo"})
+		return
+	}
+	gasto := mes.Gastos[index]
+	db.Delete(&gasto)
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
 func listarGastos(c *gin.Context) {
@@ -227,4 +224,23 @@ func resumoMes(c *gin.Context) {
 		"saldo":  saldo,
 		"gastos": mes.Gastos,
 	})
+}
+
+func totaisGastosAno(c *gin.Context) {
+	ano := c.Param("ano")
+	var meses [12]float64
+	for i := 0; i < 12; i++ {
+		mesStr := fmt.Sprintf("%02d-%s", i+1, ano)
+		var mesData MesData
+		if err := db.Preload("Gastos").Where("mes_ano = ?", mesStr).First(&mesData).Error; err == nil {
+			total := 0.0
+			for _, g := range mesData.Gastos {
+				total += g.Valor
+			}
+			meses[i] = total
+		} else {
+			meses[i] = 0
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"totais": meses})
 }
