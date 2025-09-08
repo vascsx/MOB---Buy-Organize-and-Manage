@@ -26,12 +26,12 @@ export default function IncomeForm({ renda, setRenda, atualizarDadosDoMes }) {
 
   return (
     <div className="card">
-      <h3><i className="fas fa-money-bill-wave"></i> Renda do mês</h3>
+      <h3><i className="fas fa-money-bill-wave"></i> Monthly Income</h3>
       <form className="row income-form" onSubmit={handleRendaSubmit}>
         <div>
           <input
             type="number"
-            placeholder="Valor da renda mensal (R$)"
+            placeholder="Monthly income amount (R$)"
             min="0"
             step="0.01"
             value={rendaInput}
@@ -40,12 +40,12 @@ export default function IncomeForm({ renda, setRenda, atualizarDadosDoMes }) {
           />
         </div>
         <div>
-          <button type="submit" className="btn-income"><i className="fas fa-check"></i> Definir Renda</button>
+          <button type="submit" className="btn-income"><i className="fas fa-check"></i> Set Income</button>
         </div>
       </form>
       <div className="income-display">
-        <span>Renda definida:</span>
-        <span className="income-value">R$ {renda.toFixed(2)}</span>
+        <span>Defined income:</span>
+        <span className="income-value">R$ {(typeof renda === 'number' && !isNaN(renda) ? renda : 0).toFixed(2)}</span>
       </div>
     </div>
   );

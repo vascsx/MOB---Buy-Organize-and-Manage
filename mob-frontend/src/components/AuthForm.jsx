@@ -19,7 +19,7 @@ export default function AuthForm({ onAuth }) {
         body: JSON.stringify({ username, password })
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "Erro desconhecido");
+      if (!resp.ok) throw new Error(data.error || "Unknown error");
       if (isLogin) {
         localStorage.setItem("token", data.token);
         onAuth(data.token);
@@ -27,7 +27,7 @@ export default function AuthForm({ onAuth }) {
         setIsLogin(true);
         setUsername("");
         setPassword("");
-        setError("Cadastro realizado! Faça login.");
+        setError("Registration successful! Please login.");
       }
     } catch (e) {
       setError(e.message);
@@ -36,11 +36,11 @@ export default function AuthForm({ onAuth }) {
 
   return (
     <div className="card" style={{ maxWidth: 350, margin: "40px auto" }}>
-      <h3>{isLogin ? "Login" : "Registrar"}</h3>
+      <h3>{isLogin ? "Login" : "Register"}</h3>
       <form onSubmit={handleSubmit}>
         <div>
           <input
-            placeholder="Usuário"
+            placeholder="Username"
             value={username}
             onChange={e => setUsername(e.target.value)}
             required
@@ -49,19 +49,22 @@ export default function AuthForm({ onAuth }) {
         <div>
           <input
             type="password"
-            placeholder="Senha"
+            placeholder="Password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
           />
         </div>
         <div style={{ marginTop: 12 }}>
-          <button type="submit">{isLogin ? "Entrar" : "Registrar"}</button>
+          <button type="submit">{isLogin ? "Login" : "Register"}</button>
         </div>
       </form>
       <div style={{ marginTop: 10 }}>
-        <button className="small" onClick={() => { setIsLogin(!isLogin); setError(""); }}>
-          {isLogin ? "Não tem conta? Registrar" : "Já tem conta? Login"}
+        <button
+          className="small"
+          onClick={() => { setIsLogin(!isLogin); setError(""); }}
+        >
+          {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
         </button>
       </div>
       {error && <div style={{ color: "red", marginTop: 10 }}>{error}</div>}

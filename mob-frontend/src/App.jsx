@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Header from "./components/Header";
 import IncomeForm from "./components/IncomeForm";
-import GastosTable from "./components/GastosTable";
+import ExpensesTable from "./components/ExpensesTable";
 import ExpenseForm from "./components/ExpenseForm";
 import Charts from "./components/Charts";
 import AuthForm from "./components/AuthForm";
@@ -17,69 +17,78 @@ function getToken() {
 
 function App() {
   const [token, setToken] = useState(getToken());
-  const [tela, setTela] = useState("dashboard");
-  const [mes, setMes] = useState(new Date().getMonth());
-  const [ano, setAno] = useState(new Date().getFullYear());
-  const [gastos, setGastos] = useState([]);
-  const [resumo, setResumo] = useState({ renda: 0, saldo: 0, totais: {} });
-  const [erro, setErro] = useState("");
+  const [screen, setScreen] = useState("dashboard");
+  const [month, setMonth] = useState(new Date().getMonth());
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [expenses, setExpenses] = useState([]);
+  const [summary, setSummary] = useState({ income: 0, balance: 0, totals: {} });
+  const [error, setError] = useState("");
 
-  const chaveMesAno = `${(mes+1).toString().padStart(2,'0')}-${ano}`;
+  const monthYearKey = `${(month + 1).toString().padStart(2, "0")}-${year}`;
 
-  async function atualizarDadosDoMes() {
-    setErro("");
+  async function refreshMonthData() {
+    setError("");
     try {
-      const respGastos = await fetch(`${API_URL}/gastos/${chaveMesAno}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!respGastos.ok) throw new Error("Erro ao buscar gastos");
-      const gastosMes = await respGastos.json();
-      setGastos(gastosMes || []);
+    const respExpenses = await fetch(`${API_URL}/gastos/${monthYearKey}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!respExpenses.ok) throw new Error("Error fetching expenses");
+    const monthExpenses = await respExpenses.json();
+    setExpenses(monthExpenses || []);
 
-      const respResumo = await fetch(`${API_URL}/resumo/${chaveMesAno}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!respResumo.ok) throw new Error("Erro ao buscar resumo");
-      const resumoData = await respResumo.json();
-      setResumo(resumoData || { renda: 0, saldo: 0, totais: {} });
+    const respSummary = await fetch(`${API_URL}/resumo/${monthYearKey}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!respSummary.ok) throw new Error("Error fetching summary");
+    const summaryData = await respSummary.json();
+    // Map backend fields to frontend expected fields
+    setSummary({
+      income: summaryData.renda ?? 0,
+      balance: summaryData.saldo ?? 0,
+      totals: summaryData.totais ?? {},
+    });
     } catch (e) {
-      setErro("Não foi possível carregar dados do backend. Exibindo interface vazia.");
-      setGastos([]);
-      setResumo({ renda: 0, saldo: 0, totais: {} });
+      setError("Could not load data from backend. Showing empty interface.");
+      setExpenses([]);
+      setSummary({ income: 0, balance: 0, totals: {} });
     }
   }
 
   useEffect(() => {
-    atualizarDadosDoMes();
-  }, [mes, ano]);
+    refreshMonthData();
+  }, [month, year]);
 
-
-  const removerGasto = async (i) => {
-    if (!window.confirm("Tem certeza que deseja excluir este item?")) return;
+  const removeExpense = async (i) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
     try {
-      await fetch(`${API_URL}/gasto/${chaveMesAno}/${i}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      atualizarDadosDoMes();
+    await fetch(`${API_URL}/gasto/${monthYearKey}/${i}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    refreshMonthData();
     } catch (e) {
-      setErro("Erro ao remover gasto.");
+      setError("Error removing expense.");
     }
   };
 
-  const editarGasto = async (i, novo) => {
+  const editExpense = async (i, updated) => {
     try {
-      await fetch(`${API_URL}/gasto/${chaveMesAno}/${i}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ ...novo, valor: Number(novo.valor) })
-      });
-      atualizarDadosDoMes();
+    await fetch(`${API_URL}/gasto/${monthYearKey}/${i}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        ...updated,
+        valor: Number(updated.amount ?? updated.valor ?? 0),
+        categoria: updated.category ?? updated.categoria ?? "",
+        descricao: updated.description ?? updated.descricao ?? ""
+      })
+    });
+    refreshMonthData();
     } catch (e) {
-      setErro("Erro ao editar gasto.");
+      setError("Error editing expense.");
     }
   };
 
@@ -87,7 +96,7 @@ function App() {
     return <AuthForm onAuth={tok => { setToken(tok); localStorage.setItem("token", tok); }} />;
   }
 
-  async function registrarImpostoComoGasto({ mesAno, categoria, descricao, valor }) {
+  async function registerTaxAsExpense({ mesAno, categoria, descricao, valor }) {
     try {
       await fetch(`${API_URL}/gasto`, {
         method: "POST",
@@ -102,38 +111,47 @@ function App() {
           valor: Number(valor)
         })
       });
-      atualizarDadosDoMes();
+      refreshMonthData();
     } catch (e) {
-      setErro("Erro ao registrar imposto como gasto.");
+      setError("Error registering tax as expense.");
     }
   }
 
   return (
     <div className="container">
-      <button style={{ float: "right", margin: 8 }} onClick={() => { setToken(""); localStorage.removeItem("token"); }}>Sair</button>
+      <button
+        style={{ float: "right", margin: 8 }}
+        onClick={() => { setToken(""); localStorage.removeItem("token"); }}
+      >
+        Logout
+      </button>
       <nav style={{ marginBottom: 16, display: 'flex', gap: 12 }}>
-        <button onClick={() => setTela("dashboard")}>Dashboard</button>
-        <button onClick={() => setTela("projecao")}>Projeção de Investimento</button>
-        <button onClick={() => setTela("impostos")}>Impostos (MEI/ME)</button>
+        <button onClick={() => setScreen("dashboard")}>Dashboard</button>
+        <button onClick={() => setScreen("projection")}>Investment Projection</button>
+        <button onClick={() => setScreen("taxes")}>Taxes (MEI/ME)</button>
       </nav>
-      {erro && <div style={{ color: "red", marginBottom: 16 }}>{erro}</div>}
-      {tela === "dashboard" && <>
-        <Header mes={mes} setMes={setMes} ano={ano} setAno={setAno} />
+      {error && <div style={{ color: "red", marginBottom: 16 }}>{error}</div>}
+      {screen === "dashboard" && <>
+        <Header month={month} setMonth={setMonth} year={year} setYear={setYear} />
         <div className="grid">
           <div>
-            <IncomeForm renda={resumo.renda} setRenda={valor => setResumo(r => ({ ...r, renda: valor }))} atualizarDadosDoMes={atualizarDadosDoMes} />
-            <ExpenseForm atualizarDados={atualizarDadosDoMes} mesAno={chaveMesAno} />
-            <GastosTable gastos={gastos} removerGasto={removerGasto} editarGasto={editarGasto} />
+            <IncomeForm
+              renda={summary.income}
+              setRenda={value => setSummary(s => ({ ...s, income: value }))}
+              atualizarDadosDoMes={refreshMonthData}
+            />
+            <ExpenseForm refreshData={refreshMonthData} monthYear={monthYearKey} />
+            <ExpensesTable expenses={expenses} removeExpense={removeExpense} editExpense={editExpense} />
           </div>
           <div>
-            <Charts resumo={resumo} />
+            <Charts summary={summary} />
           </div>
         </div>
       </>}
-      {tela === "projecao" && <ProjecaoInvestimento />}
-      {tela === "impostos" && <ImpostosTab onRegistrarGasto={registrarImpostoComoGasto} />}
+    {screen === "projection" && <ProjecaoInvestimento />}
+    {screen === "taxes" && <ImpostosTab onRegistrarGasto={registerTaxAsExpense} />}
       <footer>
-        <p>Feito para você organizar suas finanças ✨</p>
+        <p>Made for you to organize your finances ✨</p>
       </footer>
     </div>
   );

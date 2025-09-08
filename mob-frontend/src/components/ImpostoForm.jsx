@@ -69,7 +69,7 @@ export default function ImpostoForm({ onRegistrarGasto }) {
 
   return (
     <div className="card" style={{maxWidth:500, margin:"32px auto"}}>
-      <h3>Pagar Imposto</h3>
+      <h3>Pay Tax</h3>
       <div style={{display:'flex', gap:8, marginBottom:8, flexWrap:'wrap'}}>
         <select value={tipo} onChange={e => setTipo(e.target.value)}>
           <option value="mei">MEI</option>
@@ -81,14 +81,14 @@ export default function ImpostoForm({ onRegistrarGasto }) {
         <div style={{marginBottom:8}}>
           <label>Atividade:&nbsp;
             <select value={atividade} onChange={e => setAtividade(e.target.value)}>
-              <option value="comercio">Comércio</option>
-              <option value="servico">Serviço</option>
-              <option value="ambos">Comércio + Serviço</option>
+              <option value="comercio">Commerce</option>
+              <option value="servico">Service</option>
+              <option value="ambos">Commerce + Service</option>
             </select>
           </label>
           <div style={{fontSize:13, color:'#555', marginTop:4}}>
             INSS: R$ {MEI_DEFAULT.inss.toFixed(2)} | ISS: R$ {MEI_DEFAULT.iss.toFixed(2)} | ICMS: R$ {MEI_DEFAULT.icms.toFixed(2)}<br/>
-            Valor fixo, independente do faturamento mensal (até R$ 81.000/ano)
+            Fixed value, regardless of monthly revenue (up to R$ 81,000/year)
           </div>
         </div>
       )}
@@ -99,16 +99,16 @@ export default function ImpostoForm({ onRegistrarGasto }) {
           <input type="number" min="0" step="0.0001" value={aliquotaNominal} onChange={e => setAliquotaNominal(Number(e.target.value))} placeholder="Alíquota Nominal (ex: 0.06)" style={{width:120}} />
           <input type="number" min="0" value={parcelaDeduzir} onChange={e => setParcelaDeduzir(Number(e.target.value))} placeholder="Parcela a Deduzir" style={{width:120}} />
           <div style={{fontSize:13, color:'#555', marginTop:4}}>
-            Alíquota Efetiva = ((RBT12 × Alíquota Nominal) - Parcela a Deduzir) / RBT12<br/>
-            Exemplo: Alíquota Nominal 6% = 0.06
+            Effective Rate = ((RBT12 × Nominal Rate) - Deductible Portion) / RBT12<br/>
+            Example: Nominal Rate 6% = 0.06
           </div>
         </div>
       )}
       <button onClick={calcular} style={{marginBottom:8}}>Calcular imposto</button>
       {valor > 0 && (
         <div style={{marginBottom:8}}>
-          <b>Valor do imposto:</b> R$ {valor.toLocaleString(undefined, {minimumFractionDigits:2})} <br/>
-          <b>Descrição:</b> {desc}
+          <b>Tax amount:</b> R$ {valor.toLocaleString(undefined, {minimumFractionDigits:2})} <br/>
+          <b>Description:</b> {desc}
         </div>
       )}
       <button onClick={registrar} disabled={!valor || valor <= 0}>Registrar como gasto</button>

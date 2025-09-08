@@ -1,14 +1,14 @@
 import { useState } from "react";
 
-const categorias = ["Custo Fixo", "Custo Variável", "Reserva", "Investimento"];
+const categories = ["Fixed Cost", "Variable Cost", "Savings", "Investment"];
 
-export default function GastosTable({ gastos, removerGasto, editarGasto }) {
+export default function ExpensesTable({ expenses, removeExpense, editExpense }) {
   const [editIndex, setEditIndex] = useState(null);
-  const [editData, setEditData] = useState({ categoria: "", descricao: "", valor: "" });
+  const [editData, setEditData] = useState({ category: "", description: "", amount: "" });
 
-  const startEdit = (g, i) => {
+  const startEdit = (e, i) => {
     setEditIndex(i);
-    setEditData({ categoria: g.categoria, descricao: g.descricao, valor: g.valor });
+    setEditData({ category: e.category, description: e.description, amount: e.amount });
   };
 
   const handleEditChange = e => {
@@ -17,7 +17,7 @@ export default function GastosTable({ gastos, removerGasto, editarGasto }) {
   };
 
   const handleEditSave = () => {
-    editarGasto(editIndex, editData);
+    editExpense(editIndex, editData);
     setEditIndex(null);
   };
 
@@ -27,34 +27,34 @@ export default function GastosTable({ gastos, removerGasto, editarGasto }) {
 
   return (
     <div className="card">
-      <h3><i className="fas fa-table"></i> Todos os gastos</h3>
-      {gastos.length === 0 ? (
+      <h3><i className="fas fa-table"></i> All Expenses</h3>
+      {expenses.length === 0 ? (
         <div className="empty-state">
           <i className="fas fa-receipt"></i>
-          <p>Nenhum gasto registrado este mês</p>
+          <p>No expenses recorded this month</p>
         </div>
       ) : (
         <table>
           <thead>
             <tr>
-              <th>Categoria</th>
-              <th>Descrição</th>
-              <th>Valor (R$)</th>
-              <th>Ações</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Amount ($)</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {gastos.map((g, i) => (
+            {expenses.map((e, i) => (
               <tr key={i}>
                 {editIndex === i ? (
                   <>
                     <td>
-                      <select name="categoria" value={editData.categoria} onChange={handleEditChange}>
-                        {categorias.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      <select name="category" value={editData.category} onChange={handleEditChange}>
+                        {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       </select>
                     </td>
-                    <td><input name="descricao" value={editData.descricao} onChange={handleEditChange} /></td>
-                    <td><input name="valor" type="number" value={editData.valor} onChange={handleEditChange} /></td>
+                    <td><input name="description" value={editData.description} onChange={handleEditChange} /></td>
+                    <td><input name="amount" type="number" value={editData.amount} onChange={handleEditChange} /></td>
                     <td className="actions">
                       <button className="small success" onClick={handleEditSave}><i className="fas fa-check"></i></button>
                       <button className="small danger" onClick={handleEditCancel}><i className="fas fa-times"></i></button>
@@ -62,12 +62,12 @@ export default function GastosTable({ gastos, removerGasto, editarGasto }) {
                   </>
                 ) : (
                   <>
-                    <td><span className={`category-badge badge-${g.categoria.replace(" ", "").toLowerCase()}`}>{g.categoria}</span></td>
-                    <td>{g.descricao}</td>
-                    <td>R$ {g.valor.toFixed(2)}</td>
+                    <td><span className={`category-badge badge-${e.category.replace(" ", "").toLowerCase()}`}>{e.category}</span></td>
+                    <td>{e.description}</td>
+                    <td>${e.amount.toFixed(2)}</td>
                     <td className="actions">
-                      <button className="small" onClick={() => startEdit(g, i)}><i className="fas fa-pen"></i></button>
-                      <button className="small danger" onClick={() => removerGasto(i)}><i className="fas fa-trash"></i></button>
+                      <button className="small" onClick={() => startEdit(e, i)}><i className="fas fa-pen"></i></button>
+                      <button className="small danger" onClick={() => removeExpense(i)}><i className="fas fa-trash"></i></button>
                     </td>
                   </>
                 )}
