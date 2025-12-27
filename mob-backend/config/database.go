@@ -59,7 +59,6 @@ func InitDB() {
 		&models.ExpenseSplit{},
 		&models.Investment{},
 		&models.EmergencyFund{},
-		&models.Projection{},
 	)
 	
 	if err != nil {
