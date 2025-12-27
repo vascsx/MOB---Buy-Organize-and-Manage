@@ -103,10 +103,10 @@ export interface IncomeSummary {
 export interface MemberIncome {
   member_id: number;
   member_name: string;
-  type: IncomeType;
-  gross_monthly_cents: number;
-  net_monthly_cents: number;
-  is_active: boolean;
+  type: IncomeType | string;
+  gross: number;  // valor em reais
+  net: number;    // valor em reais
+  tax: number;    // valor em reais
 }
 
 export interface CreateIncomeRequest {

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
@@ -11,6 +11,7 @@ import { formatMoney, formatPercentage } from '../../lib/utils/money';
 import type { Income, IncomeBreakdown } from '../../lib/types/api.types';
 import { AddIncomeModal } from '../AddIncomeModal';
 import { AddMemberModal } from '../AddMemberModal';
+import { EditIncomeModal } from '../EditIncomeModal';
 
 interface IndividualProfileProps {
   onBack: () => void;
@@ -19,10 +20,12 @@ interface IndividualProfileProps {
 
 export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) {
   const { family, members, fetchMembers } = useFamilyContext();
-  const { incomes, breakdown, fetchIncomes, fetchBreakdown, createIncome, isLoading, error } = useIncomes();
+  const { incomes, breakdown, fetchIncomes, fetchBreakdown, createIncome, deleteIncome, isLoading, error } = useIncomes();
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (family) {
@@ -152,6 +155,214 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
     );
   }
 
+  const handleDeleteIncome = async (incomeId: number) => {
+    if (!family) return;
+    
+    try {
+      await deleteIncome(family.id, incomeId);
+      setShowDeleteConfirm(false);
+      setSelectedIncome(null);
+      // Se não houver mais rendas, voltar para lista
+      if (incomes.length <= 1) {
+        onBack();
+      }
+    } catch (err) {
+      console.error('Erro ao excluir renda:', err);
+    }
+  };
+
+  const handleEditClick = (income: Income) => {
+    setSelectedIncome(income);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteClick = (income: Income) => {
+    setSelectedIncome(income);
+    setShowDeleteConfirm(true);
+  };
+
+  // Se não houver memberId específico, mostrar todas as rendas
+  if (!memberId) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Rendas da Família</h1>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowAddMemberModal(true)}
+              variant="outline"
+              className="text-sm"
+            >
+              + Adicionar Membro
+            </Button>
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm"
+            >
+              + Adicionar Renda
+            </Button>
+          </div>
+        </div>
+
+        {/* Lista de Rendas */}
+        <div className="grid gap-4">
+          {incomes.map((income) => (
+            <Card key={income.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{income.family_member?.name || 'Sem nome'}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {income.type.toUpperCase()}
+                      </Badge>
+                      {income.is_active && (
+                        <Badge className="bg-[#10B981] hover:bg-[#10B981]/90 text-white text-xs">
+                          Ativo
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleEditClick(income)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handleDeleteClick(income)}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-lg p-4">
+                  <p className="text-sm text-gray-700 mb-1">💰 Renda Líquida</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatMoney(income.net_monthly_cents || 0)}</p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm text-gray-700 mb-1">📊 Renda Bruta</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatMoney(income.gross_monthly_cents)}</p>
+                </div>
+              </div>
+
+              {/* Benefícios */}
+              {((income.food_voucher_cents || 0) > 0 || (income.transport_voucher_cents || 0) > 0 || (income.bonus_cents || 0) > 0) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">Benefícios</p>
+                  <div className="flex gap-4 text-sm">
+                    {(income.food_voucher_cents || 0) > 0 && (
+                      <span className="text-gray-600">VA: {formatMoney(income.food_voucher_cents || 0)}</span>
+                    )}
+                    {(income.transport_voucher_cents || 0) > 0 && (
+                      <span className="text-gray-600">VT: {formatMoney(income.transport_voucher_cents || 0)}</span>
+                    )}
+                    {(income.bonus_cents || 0) > 0 && (
+                      <span className="text-gray-600">Bônus: {formatMoney(income.bonus_cents || 0)}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+
+        {/* Modais */}
+        {showAddMemberModal && (
+          <AddMemberModal
+            isOpen={showAddMemberModal}
+            onClose={() => setShowAddMemberModal(false)}
+            onSuccess={() => {
+              setShowAddMemberModal(false);
+              if (family) {
+                fetchMembers();
+              }
+            }}
+          />
+        )}
+
+        {showAddModal && (
+          <AddIncomeModal
+            isOpen={showAddModal}
+            onClose={() => setShowAddModal(false)}
+            onSuccess={async () => {
+              setShowAddModal(false);
+              if (family) {
+                await fetchIncomes(family.id);
+              }
+            }}
+          />
+        )}
+
+        {showEditModal && selectedIncome && (
+          <EditIncomeModal
+            isOpen={showEditModal}
+            onClose={() => {
+              setShowEditModal(false);
+              setSelectedIncome(null);
+            }}
+            income={selectedIncome}
+            onSuccess={async () => {
+              setShowEditModal(false);
+              setSelectedIncome(null);
+              if (family) {
+                await fetchIncomes(family.id);
+              }
+            }}
+          />
+        )}
+
+        {/* Modal de Confirmação de Exclusão */}
+        {showDeleteConfirm && selectedIncome && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Excluir Renda</h3>
+              <p className="text-gray-600 mb-6">
+                Tem certeza que deseja excluir a renda de <strong>{selectedIncome.family_member?.name || 'este membro'}</strong>? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setSelectedIncome(null);
+                  }}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => handleDeleteIncome(selectedIncome.id)}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Excluir
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Modo de visualização de uma renda específica (quando memberId é fornecido)
   if (!selectedIncome) {
     return (
       <div className="space-y-6">
@@ -189,6 +400,22 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
           </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={() => setShowEditModal(true)}
+            variant="outline"
+            className="text-sm"
+          >
+            <Pencil className="w-4 h-4 mr-1" />
+            Editar
+          </Button>
+          <Button
+            onClick={() => handleDeleteClick(selectedIncome)}
+            variant="outline"
+            className="text-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Excluir
+          </Button>
           <Button
             onClick={() => setShowAddMemberModal(true)}
             variant="outline"
@@ -242,7 +469,7 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
       )}
 
       {/* Call to Action */}
-      {selectedIncome?.type === 'CLT' && (
+      {selectedIncome?.type.toUpperCase() === 'CLT' && (
         <Card className="bg-gradient-to-br from-[#F0F9FF] to-[#E0F2FE] rounded-lg p-6 shadow-sm border border-blue-100">
           <h4 className="text-base font-semibold text-gray-900 mb-2">🔄 Simular Mudança CLT → PJ</h4>
           <p className="text-sm text-gray-600 mb-4">
@@ -277,6 +504,54 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
             }
           }}
         />
+      )}
+
+      {showEditModal && selectedIncome && (
+        <EditIncomeModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedIncome(null);
+          }}
+          income={selectedIncome}
+          onSuccess={async () => {
+            setShowEditModal(false);
+            setSelectedIncome(null);
+            if (family) {
+              await fetchIncomes(family.id);
+            }
+          }}
+        />
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteConfirm && selectedIncome && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Excluir Renda</h3>
+            <p className="text-gray-600 mb-6">
+              Tem certeza que deseja excluir a renda de <strong>{selectedIncome.family_member?.name || 'este membro'}</strong>? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setSelectedIncome(null);
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => handleDeleteIncome(selectedIncome.id)}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

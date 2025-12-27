@@ -53,9 +53,9 @@ export function Dashboard() {
     <div className="space-y-6">
       {/* Hero Card - Renda Líquida */}
       <IncomeCard 
-        totalNet={data.income.total_net}
-        totalGross={data.income.total_gross}
-        totalTax={data.income.total_tax}
+        totalNet={(data.income.total_net || 0) * 100}  // converter reais para centavos
+        totalGross={(data.income.total_gross || 0) * 100}
+        totalTax={(data.income.total_tax || 0) * 100}
       />
 
       {/* Por Pessoa - Grid 2 colunas */}
@@ -67,9 +67,9 @@ export function Dashboard() {
               <PersonCard
                 key={member.member_id}
                 name={member.member_name}
-                amount={formatMoney(member.net_monthly_cents || 0)}
+                amount={formatMoney((member.net || 0) * 100)}  // converter reais para centavos
                 type={member.type?.toUpperCase() || 'N/A'}
-                status={member.is_active ? 'Ativo' : 'Inativo'}
+                status="Ativo"
               />
             ))}
           </div>
@@ -79,16 +79,22 @@ export function Dashboard() {
       {/* Grid 2 colunas para Resumo e Alertas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MonthSummary 
-          totalNet={data.income.total_net}
-          expenses={data.expenses.total_monthly}
-          investments={data.investments.total_monthly}
-          available={data.available_income}
+          totalNet={(data.income.total_net || 0) * 100}  // converter reais para centavos
+          expenses={(data.expenses.total_monthly || 0) * 100}
+          investments={(data.investments.total_monthly || 0) * 100}
+          available={(data.available_income || 0) * 100}
         />
         <Alerts />
       </div>
 
       {/* Saúde Financeira */}
-      <FinancialHealth score={data.financial_health_score} />
+      <FinancialHealth 
+        score={data.financial_health_score}
+        expenseRatio={data.income.total_net > 0 ? (data.expenses.total_monthly / data.income.total_net) * 100 : 0}
+        hasInvestments={data.investments && data.investments.total_monthly > 0}
+        emergencyProgress={data.emergency_fund_progress?.percentage_complete || 0}
+        hasPositiveBalance={data.available_income > 0}
+      />
     </div>
   );
 }

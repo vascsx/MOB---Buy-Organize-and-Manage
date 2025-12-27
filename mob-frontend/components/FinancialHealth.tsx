@@ -1,12 +1,22 @@
 import React from 'react';
-import { Check, AlertTriangle } from 'lucide-react';
+import { Check, AlertTriangle, X } from 'lucide-react';
 import { Progress } from './ui/progress';
 
 interface FinancialHealthProps {
   score: number;
+  expenseRatio?: number;      // % de gastos sobre renda
+  hasInvestments?: boolean;    // tem investimentos ativos
+  emergencyProgress?: number;  // % da reserva de emergência
+  hasPositiveBalance?: boolean; // sobra dinheiro
 }
 
-export function FinancialHealth({ score }: FinancialHealthProps) {
+export function FinancialHealth({ 
+  score, 
+  expenseRatio = 0,
+  hasInvestments = false,
+  emergencyProgress = 0,
+  hasPositiveBalance = false
+}: FinancialHealthProps) {
   const getStatusLabel = (score: number) => {
     if (score >= 80) return { text: 'Excelente', color: '#10B981' };
     if (score >= 60) return { text: 'Bom', color: '#10B981' };
@@ -16,10 +26,32 @@ export function FinancialHealth({ score }: FinancialHealthProps) {
 
   const status = getStatusLabel(score);
   
+  // Critérios baseados na lógica do backend (total: 100 pontos)
   const indicators = [
-    { label: 'Despesas controladas', status: score >= 60 ? 'good' : 'warning' },
-    { label: 'Reserva de emergência', status: score >= 70 ? 'good' : 'warning' },
-    { label: 'Investimentos', status: score >= 50 ? 'good' : 'warning' },
+    { 
+      label: 'Despesas controladas', 
+      status: expenseRatio < 50 ? 'good' : expenseRatio < 70 ? 'warning' : 'bad',
+      detail: expenseRatio > 0 ? `${expenseRatio.toFixed(0)}% da renda` : 'Sem gastos registrados',
+      points: 30
+    },
+    { 
+      label: 'Possui investimentos', 
+      status: hasInvestments ? 'good' : 'bad',
+      detail: hasInvestments ? 'Investindo mensalmente' : 'Sem investimentos',
+      points: 25
+    },
+    { 
+      label: 'Reserva de emergência', 
+      status: emergencyProgress >= 100 ? 'good' : emergencyProgress >= 50 ? 'warning' : 'bad',
+      detail: emergencyProgress > 0 ? `${emergencyProgress.toFixed(0)}% concluída` : 'Não configurada',
+      points: 25
+    },
+    { 
+      label: 'Saldo positivo', 
+      status: hasPositiveBalance ? 'good' : 'bad',
+      detail: hasPositiveBalance ? 'Sobra dinheiro' : 'Gastos igualam renda',
+      points: 20
+    },
   ];
 
   return (
@@ -47,17 +79,27 @@ export function FinancialHealth({ score }: FinancialHealthProps) {
 
       <div className="space-y-3">
         {indicators.map((indicator, index) => (
-          <div key={index} className="flex items-center gap-3">
+          <div key={index} className="flex items-start gap-3">
             {indicator.status === 'good' ? (
               <div className="w-6 h-6 rounded-full bg-[#10B981] flex items-center justify-center flex-shrink-0">
                 <Check className="w-4 h-4 text-white" />
               </div>
-            ) : (
+            ) : indicator.status === 'warning' ? (
               <div className="w-6 h-6 rounded-full bg-[#F59E0B] flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-4 h-4 text-white" />
               </div>
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-[#EF4444] flex items-center justify-center flex-shrink-0">
+                <X className="w-4 h-4 text-white" />
+              </div>
             )}
-            <p className="text-sm text-gray-700">{indicator.label}</p>
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-gray-700">{indicator.label}</p>
+                <span className="text-xs text-gray-500">{indicator.points} pts</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">{indicator.detail}</p>
+            </div>
           </div>
         ))}
       </div>

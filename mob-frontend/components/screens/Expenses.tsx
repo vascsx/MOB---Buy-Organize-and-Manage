@@ -8,21 +8,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
 import { useExpenses } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
-import { ExpenseCategory } from '../../lib/types/api.types';
+
+// Static categories matching backend expectations
+const STATIC_CATEGORIES = [
+  { id: 1, name: 'Moradia', icon: '🏠' },
+  { id: 2, name: 'Alimentação', icon: '🍽️' },
+  { id: 3, name: 'Transporte', icon: '🚗' },
+  { id: 4, name: 'Saúde', icon: '🏥' },
+  { id: 5, name: 'Educação', icon: '📚' },
+  { id: 6, name: 'Lazer', icon: '🎮' },
+  { id: 7, name: 'Vestuário', icon: '👔' },
+  { id: 8, name: 'Utilidades', icon: '💡' },
+  { id: 9, name: 'Outros', icon: '📦' },
+];
 
 export function Expenses() {
-  const { family } = useFamilyContext();
+  const { family, members } = useFamilyContext();
   const {
     expenses,
-    categories,
     summary,
     categoryBreakdown,
     isLoading,
     error,
-    fetchCategories,
     fetchExpenses,
     fetchSummary,
     fetchCategoryBreakdown,
@@ -39,19 +50,22 @@ export function Expenses() {
     name: string;
     description: string;
     amount_cents: number;
+    amount_cents_display: string;
     category_id: string;
     frequency: 'once' | 'monthly' | 'yearly';
+    due_day: number;
   }>({
     name: '',
     description: '',
     amount_cents: 0,
+    amount_cents_display: '',
     category_id: '',
     frequency: 'once',
+    due_day: 1,
   });
 
   useEffect(() => {
     if (family) {
-      fetchCategories(family.id);
       fetchExpenses(family.id);
       fetchSummary(family.id);
       fetchCategoryBreakdown(family.id);
@@ -62,21 +76,34 @@ export function Expenses() {
     if (!family) return;
     
     try {
+      // Get the first member from family to use as default split
+      const defaultMember = members?.[0];
+      if (!defaultMember) {
+        console.error('No family members found');
+        return;
+      }
+      
       await createExpense(family.id, {
         name: formData.name,
-        description: formData.description,
+        description: formData.description || undefined,
         category_id: parseInt(formData.category_id),
-        amount_cents: Math.round(formData.amount_cents * 100), // Convert to cents
+        amount_cents: formData.amount_cents, // Already in cents
         frequency: formData.frequency,
-        splits: [], // Empty splits array for now
+        due_day: formData.due_day,
+        splits: [{
+          family_member_id: defaultMember.id,
+          percentage: 100,
+        }],
       });
       setIsDialogOpen(false);
       setFormData({
         name: '',
         description: '',
         amount_cents: 0,
+        amount_cents_display: '',
         category_id: '',
         frequency: 'once' as const,
+        due_day: 1,
       });
       // Refresh data
       fetchExpenses(family.id);
@@ -133,7 +160,12 @@ export function Expenses() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">
-          💸 Despesas de {new Date(selectedMonth + '-01').toLocaleDateString('pt-BR', { month: 'long' })}
+          {(() => {
+            const date = new Date(selectedMonth + '-01T00:00:00');
+            const month = date.toLocaleString('pt-BR', { month: 'long' });
+            const year = date.getFullYear();
+            return `💸 Despesas de ${month.charAt(0).toUpperCase() + month.slice(1)} de ${year}`;
+          })()}
         </h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -167,13 +199,39 @@ export function Expenses() {
               </div>
               <div>
                 <Label htmlFor="amount">Valor (R$)</Label>
-                <Input 
-                  id="amount" 
-                  type="number" 
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.amount_cents}
-                  onChange={(e) => setFormData({ ...formData, amount_cents: parseFloat(e.target.value) || 0 })}
+                <Input
+                  id="amount"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={formData.amount_cents_display}
+                  onChange={e => {
+                    let value = e.target.value.replace(/[^\d,.]/g, '');
+                    // Mantém só o primeiro separador decimal
+                    const firstComma = value.indexOf(',');
+                    const firstDot = value.indexOf('.');
+                    let sep = -1;
+                    if (firstComma !== -1 && firstDot !== -1) {
+                      sep = Math.min(firstComma, firstDot);
+                    } else if (firstComma !== -1) {
+                      sep = firstComma;
+                    } else if (firstDot !== -1) {
+                      sep = firstDot;
+                    }
+                    if (sep !== -1) {
+                      let before = value.slice(0, sep + 1);
+                      let after = value.slice(sep + 1).replace(/[.,]/g, '');
+                      value = before + after;
+                    }
+                    // Troca vírgula por ponto para parseFloat
+                    const parseValue = value.replace(',', '.');
+                    const floatValue = parseFloat(parseValue);
+                    setFormData({
+                      ...formData,
+                      amount_cents: isNaN(floatValue) ? 0 : Math.round(floatValue * 100),
+                      amount_cents_display: value
+                    });
+                  }}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -187,7 +245,7 @@ export function Expenses() {
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
+                      {STATIC_CATEGORIES.map((cat) => (
                         <SelectItem key={cat.id} value={String(cat.id)}>
                           {cat.icon} {cat.name}
                         </SelectItem>
@@ -212,8 +270,34 @@ export function Expenses() {
                   </Select>
                 </div>
               </div>
+              <div>
+                <Label htmlFor="due_day">Dia de Vencimento</Label>
+                <Input
+                  id="due_day"
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="1-31"
+                  value={formData.due_day}
+                  onChange={(e) => setFormData({ ...formData, due_day: parseInt(e.target.value) || 1 })}
+                />
+              </div>
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    setFormData({
+                      name: '',
+                      description: '',
+                      amount_cents: 0,
+                      amount_cents_display: '',
+                      category_id: '',
+                      frequency: 'once',
+                      due_day: 1,
+                    });
+                  }}
+                >
                   Cancelar
                 </Button>
                 <Button 
@@ -331,7 +415,7 @@ export function Expenses() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">
-                      {categories.find((c) => c.id === expense.category_id)?.icon || '📦'}
+                      {STATIC_CATEGORIES.find((c) => c.id === expense.category_id)?.icon || '📦'}
                     </span>
                     <div>
                       <h4 className="font-bold">{expense.name}</h4>
@@ -341,7 +425,7 @@ export function Expenses() {
                           {expense.frequency === 'monthly' ? 'Mensal' : expense.frequency === 'yearly' ? 'Anual' : 'Única'}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {categories.find((c) => c.id === expense.category_id)?.name || 'Outros'}
+                          {STATIC_CATEGORIES.find((c) => c.id === expense.category_id)?.name || 'Outros'}
                         </Badge>
                       </div>
                     </div>
