@@ -16,25 +16,24 @@ import { Skeleton } from './components/ui/skeleton';
 export default function App() {
   const [activeMenuItem, setActiveMenuItem] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { families, currentFamily, fetchMyFamilies, createFamily, isLoading } = useFamilyContext();
-  const [hasCheckedFamilies, setHasCheckedFamilies] = useState(false);
+  const { family, fetchFamily, createFamily, isLoading } = useFamilyContext();
+  const [hasCheckedFamily, setHasCheckedFamily] = useState(false);
 
-  // Carregar famílias ao montar o componente
+  // Carregar família ao montar o componente
   useEffect(() => {
-    const loadFamilies = async () => {
-      await fetchMyFamilies();
-      setHasCheckedFamilies(true);
+    const loadFamily = async () => {
+      await fetchFamily();
+      setHasCheckedFamily(true);
     };
-    loadFamilies();
+    loadFamily();
   }, []);
 
   const handleCreateFamily = async (name: string) => {
     await createFamily({ name });
-    // Não precisa recarregar, o hook já atualiza o estado
   };
 
-  // Mostrar loading enquanto carrega ou está criando família
-  if (!hasCheckedFamilies || (isLoading && families.length === 0)) {
+  // Mostrar loading enquanto carrega
+  if (!hasCheckedFamily) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-4">
@@ -46,8 +45,8 @@ export default function App() {
     );
   }
 
-  // Se não houver famílias E não houver família selecionada, mostrar onboarding
-  if (families.length === 0 && !currentFamily) {
+  // Se não houver família, mostrar onboarding
+  if (!family) {
     return <FamilyOnboarding onCreateFamily={handleCreateFamily} isLoading={isLoading} />;
   }
 

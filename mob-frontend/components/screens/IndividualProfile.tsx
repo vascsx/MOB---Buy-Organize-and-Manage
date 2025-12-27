@@ -9,6 +9,8 @@ import { useIncomes } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
 import type { Income, IncomeBreakdown } from '../../lib/types/api.types';
+import { AddIncomeModal } from '../AddIncomeModal';
+import { AddMemberModal } from '../AddMemberModal';
 
 interface IndividualProfileProps {
   onBack: () => void;
@@ -16,15 +18,18 @@ interface IndividualProfileProps {
 }
 
 export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) {
-  const { currentFamily } = useFamilyContext();
-  const { incomes, breakdown, fetchIncomes, fetchBreakdown, isLoading, error } = useIncomes();
+  const { family, members, fetchMembers } = useFamilyContext();
+  const { incomes, breakdown, fetchIncomes, fetchBreakdown, createIncome, isLoading, error } = useIncomes();
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
 
   useEffect(() => {
-    if (currentFamily) {
-      fetchIncomes(currentFamily.id);
+    if (family) {
+      fetchIncomes(family.id);
+      fetchMembers();
     }
-  }, [currentFamily, fetchIncomes]);
+  }, [family, fetchIncomes, fetchMembers]);
 
   useEffect(() => {
     if (incomes.length > 0) {
@@ -35,17 +40,22 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
       
       if (income) {
         setSelectedIncome(income);
-        if (currentFamily) {
-          fetchBreakdown(currentFamily.id, income.id);
+        // Apenas buscar breakdown se necessário (para ter taxas detalhadas)
+        // Mas podemos usar os dados do income diretamente
+        if (family) {
+          fetchBreakdown(family.id, income.id);
         }
       }
+    } else {
+      // Se não houver mais incomes, limpar seleção
+      setSelectedIncome(null);
     }
-  }, [incomes, memberId, currentFamily, fetchBreakdown]);
+  }, [incomes, memberId, family, fetchBreakdown]);
 
-  if (!currentFamily) {
+  if (!family) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <p className="text-gray-500">Selecione uma família</p>
+        <p className="text-gray-500">Nenhuma família encontrada</p>
       </div>
     );
   }
@@ -81,21 +91,68 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
           <h1 className="text-2xl font-bold text-gray-900">Rendas da Família</h1>
         </div>
 
-        <Card className="bg-white rounded-lg p-12 text-center shadow-sm border border-gray-100">
-          <div className="text-6xl mb-4">💰</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Nenhuma renda cadastrada</h2>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Comece adicionando as rendas dos membros da família para ter um controle completo das finanças
-          </p>
-          <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white">
-            + Adicionar Renda
-          </Button>
-        </Card>
+        {members.length === 0 ? (
+          <Card className="bg-white rounded-lg p-12 text-center shadow-sm border border-gray-100">
+            <div className="text-6xl mb-4">👥</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Nenhum membro cadastrado</h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Primeiro, adicione os membros da família para depois cadastrar as rendas
+            </p>
+            <Button 
+              onClick={() => setShowAddMemberModal(true)}
+              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+            >
+              + Adicionar Membro
+            </Button>
+          </Card>
+        ) : (
+          <Card className="bg-white rounded-lg p-12 text-center shadow-sm border border-gray-100">
+            <div className="text-6xl mb-4">💰</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Nenhuma renda cadastrada</h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Comece adicionando as rendas dos membros da família para ter um controle completo das finanças
+            </p>
+            <Button 
+              onClick={() => setShowAddModal(true)}
+              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+            >
+              + Adicionar Renda
+            </Button>
+          </Card>
+        )}
+
+        {/* Modal de adicionar membro */}
+        {showAddMemberModal && (
+          <AddMemberModal
+            isOpen={showAddMemberModal}
+            onClose={() => setShowAddMemberModal(false)}
+            onSuccess={() => {
+              setShowAddMemberModal(false);
+              if (family) {
+                fetchMembers();
+              }
+            }}
+          />
+        )}
+
+        {/* Modal de adicionar renda */}
+        {showAddModal && (
+          <AddIncomeModal
+            isOpen={showAddModal}
+            onClose={() => setShowAddModal(false)}
+            onSuccess={async () => {
+              setShowAddModal(false);
+              if (family) {
+                await fetchIncomes(family.id);
+              }
+            }}
+          />
+        )}
       </div>
     );
   }
 
-  if (!selectedIncome || !breakdown) {
+  if (!selectedIncome) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-40 w-full" />
@@ -105,26 +162,6 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
   }
 
   const member = selectedIncome.family_member;
-  const discounts = [
-    { 
-      label: 'INSS', 
-      value: breakdown.inss_cents, 
-      percentage: breakdown.inss_rate * 100, 
-      color: '#EF4444' 
-    },
-    { 
-      label: 'IRPF', 
-      value: breakdown.irpf_cents, 
-      percentage: breakdown.irpf_rate * 100, 
-      color: breakdown.irpf_cents > 0 ? '#F59E0B' : '#E5E7EB'
-    },
-    { 
-      label: 'FGTS*', 
-      value: breakdown.fgts_cents, 
-      percentage: 8.0, 
-      color: '#3B82F6' 
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -151,77 +188,53 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
             )}
           </div>
         </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowAddMemberModal(true)}
+            variant="outline"
+            className="text-sm"
+          >
+            + Adicionar Membro
+          </Button>
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="bg-[#3B82F6] hover:bg-[#2563EB] text-white text-sm"
+          >
+            + Adicionar Renda
+          </Button>
+        </div>
       </div>
 
       {/* Card Renda Mensal */}
       <Card className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-lg p-6 shadow-sm border border-gray-100">
         <p className="text-sm text-gray-700 mb-2">💰 Renda Mensal</p>
         <div className="mb-3">
-          <p className="text-4xl font-bold text-gray-900">{formatMoney(breakdown.net_monthly_cents)}</p>
-          <span className="text-gray-600 text-sm"> / mês</span>
+          <p className="text-4xl font-bold text-gray-900">{formatMoney(selectedIncome.net_monthly_cents || 0)}</p>
+          <span className="text-gray-600 text-sm"> / mês (líquido)</span>
         </div>
-        <p className="text-sm text-gray-600">
-          {formatMoney(breakdown.gross_monthly_cents)} bruto
-        </p>
-      </Card>
-
-      {/* Descontos Automáticos */}
-      <Card className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-        <h3 className="text-xl font-semibold text-gray-900 mb-5">Descontos Automáticos</h3>
-        <div className="space-y-5">
-          {discounts.map((discount, index) => (
-            <div key={index}>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">{discount.label}</span>
-                <div className="flex items-center gap-4">
-                  <span className="font-semibold text-gray-900">
-                    {formatMoney(discount.value)}
-                  </span>
-                  <span className="text-sm text-gray-500 min-w-[60px] text-right">
-                    {formatPercentage(discount.percentage)}
-                  </span>
-                </div>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-6 overflow-hidden">
-                <div
-                  className="h-full rounded-full flex items-center justify-end px-2 transition-all"
-                  style={{
-                    width: `${Math.min(discount.percentage, 100)}%`,
-                    backgroundColor: discount.color,
-                  }}
-                >
-                  <span className="text-xs text-white font-medium">
-                    {formatPercentage(discount.percentage)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs italic text-gray-500 mt-4">*Depositado pela empresa</p>
       </Card>
 
       {/* Benefícios Adicionais */}
-      {(breakdown.food_voucher_cents > 0 || breakdown.transport_voucher_cents > 0 || breakdown.bonus_cents > 0) && (
+      {((selectedIncome.food_voucher_cents || 0) > 0 || (selectedIncome.transport_voucher_cents || 0) > 0 || (selectedIncome.bonus_cents || 0) > 0) && (
         <Card className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
           <h3 className="text-xl font-semibold text-gray-900 mb-4">🎁 Benefícios Adicionais</h3>
           <div className="space-y-3">
-            {breakdown.food_voucher_cents > 0 && (
+            {(selectedIncome.food_voucher_cents || 0) > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Vale Alimentação</span>
-                <span className="font-semibold text-gray-900">{formatMoney(breakdown.food_voucher_cents)}</span>
+                <span className="font-semibold text-gray-900">{formatMoney(selectedIncome.food_voucher_cents || 0)}</span>
               </div>
             )}
-            {breakdown.transport_voucher_cents > 0 && (
+            {(selectedIncome.transport_voucher_cents || 0) > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Vale Transporte</span>
-                <span className="font-semibold text-gray-900">{formatMoney(breakdown.transport_voucher_cents)}</span>
+                <span className="font-semibold text-gray-900">{formatMoney(selectedIncome.transport_voucher_cents || 0)}</span>
               </div>
             )}
-            {breakdown.bonus_cents > 0 && (
+            {(selectedIncome.bonus_cents || 0) > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-gray-700">Bônus</span>
-                <span className="font-semibold text-gray-900">{formatMoney(breakdown.bonus_cents)}</span>
+                <span className="font-semibold text-gray-900">{formatMoney(selectedIncome.bonus_cents || 0)}</span>
               </div>
             )}
           </div>
@@ -229,7 +242,7 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
       )}
 
       {/* Call to Action */}
-      {selectedIncome?.type === 'clt' && (
+      {selectedIncome?.type === 'CLT' && (
         <Card className="bg-gradient-to-br from-[#F0F9FF] to-[#E0F2FE] rounded-lg p-6 shadow-sm border border-blue-100">
           <h4 className="text-base font-semibold text-gray-900 mb-2">🔄 Simular Mudança CLT → PJ</h4>
           <p className="text-sm text-gray-600 mb-4">
@@ -237,6 +250,33 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
           </p>
           <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white">Ver simulação</Button>
         </Card>
+      )}
+
+      {/* Modais */}
+      {showAddMemberModal && (
+        <AddMemberModal
+          isOpen={showAddMemberModal}
+          onClose={() => setShowAddMemberModal(false)}
+          onSuccess={() => {
+            setShowAddMemberModal(false);
+            if (family) {
+              fetchMembers();
+            }
+          }}
+        />
+      )}
+
+      {showAddModal && (
+        <AddIncomeModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={async () => {
+            setShowAddModal(false);
+            if (family) {
+              await fetchIncomes(family.id);
+            }
+          }}
+        />
       )}
     </div>
   );

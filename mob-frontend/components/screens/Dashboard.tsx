@@ -12,19 +12,19 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { Card } from '../ui/card';
 
 export function Dashboard() {
-  const { currentFamily } = useFamilyContext();
+  const { family } = useFamilyContext();
   const { data, isLoading, error, fetchDashboard } = useDashboard();
 
   useEffect(() => {
-    if (currentFamily) {
-      fetchDashboard(currentFamily.id);
+    if (family) {
+      fetchDashboard(family.id);
     }
-  }, [currentFamily, fetchDashboard]);
+  }, [family, fetchDashboard]);
 
-  if (!currentFamily) {
+  if (!family) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <p className="text-gray-500">Selecione uma família para visualizar o dashboard</p>
+        <p className="text-gray-500">Nenhuma família encontrada</p>
       </div>
     );
   }

@@ -3,11 +3,12 @@ import { Plus, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useInvestments, useFamilies } from '../../hooks';
+import { useInvestments } from '../../hooks';
+import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney } from '../../lib/utils/money';
 
 export function Investments() {
-  const { currentFamily } = useFamilies();
+  const { family } = useFamilyContext();
   const {
     investments,
     summary,
@@ -24,23 +25,23 @@ export function Investments() {
   const [selectedTab, setSelectedTab] = useState('60'); // 5 anos em meses
 
   useEffect(() => {
-    if (currentFamily) {
-      fetchInvestments(currentFamily.id);
-      fetchSummary(currentFamily.id);
-      fetchProjections(currentFamily.id, parseInt(selectedTab));
+    if (family) {
+      fetchInvestments(family.id);
+      fetchSummary(family.id);
+      fetchProjections(family.id, parseInt(selectedTab));
     }
-  }, [currentFamily]);
+  }, [family]);
 
   useEffect(() => {
-    if (currentFamily) {
-      fetchProjections(currentFamily.id, parseInt(selectedTab));
+    if (family) {
+      fetchProjections(family.id, parseInt(selectedTab));
     }
-  }, [selectedTab, currentFamily]);
+  }, [selectedTab, family]);
 
-  if (!currentFamily) {
+  if (!family) {
     return (
       <Card className="p-6">
-        <p className="text-gray-500">Selecione uma família para visualizar investimentos</p>
+        <p className="text-gray-500">Nenhuma família encontrada</p>
       </Card>
     );
   }

@@ -66,27 +66,27 @@ export interface Income {
   family_member?: FamilyMember;
   type: IncomeType;
   gross_monthly_cents: number;
+  net_monthly_cents: number; // Salário líquido informado pelo usuário
   food_voucher_cents: number;
   transport_voucher_cents: number;
   bonus_cents: number;
-  simples_nacional_rate?: number;
-  pro_labore_cents?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 }
 
 export interface IncomeBreakdown {
-  gross_monthly_cents: number;
-  net_monthly_cents: number;
-  inss_cents: number;
-  irpf_cents: number;
-  fgts_cents: number;
-  food_voucher_cents: number;
-  transport_voucher_cents: number;
-  bonus_cents: number;
-  inss_rate: number;
-  irpf_rate: number;
+  income: Income;
+  gross_amount: number; // em reais
+  net_amount: number; // em reais
+  total_tax: number; // em reais
+  benefits: number; // em reais
+  taxes: {
+    INSS?: number; // em reais
+    IRPF?: number; // em reais
+    FGTS?: number; // em reais
+    [key: string]: number | undefined;
+  };
 }
 
 export interface IncomeSummary {
@@ -113,11 +113,10 @@ export interface CreateIncomeRequest {
   family_member_id: number;
   type: IncomeType;
   gross_monthly_cents: number;
+  net_monthly_cents: number;
   food_voucher_cents?: number;
   transport_voucher_cents?: number;
   bonus_cents?: number;
-  simples_nacional_rate?: number;
-  pro_labore_cents?: number;
 }
 
 // ===== EXPENSE =====

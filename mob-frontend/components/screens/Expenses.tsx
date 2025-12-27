@@ -8,12 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { useExpenses, useFamilies } from '../../hooks';
+import { useExpenses } from '../../hooks';
+import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
 import { ExpenseCategory } from '../../lib/types/api.types';
 
 export function Expenses() {
-  const { currentFamily } = useFamilies();
+  const { family } = useFamilyContext();
   const {
     expenses,
     categories,
@@ -49,19 +50,19 @@ export function Expenses() {
   });
 
   useEffect(() => {
-    if (currentFamily) {
-      fetchCategories(currentFamily.id);
-      fetchExpenses(currentFamily.id);
-      fetchSummary(currentFamily.id);
-      fetchCategoryBreakdown(currentFamily.id);
+    if (family) {
+      fetchCategories(family.id);
+      fetchExpenses(family.id);
+      fetchSummary(family.id);
+      fetchCategoryBreakdown(family.id);
     }
-  }, [currentFamily, selectedMonth]);
+  }, [family, selectedMonth]);
 
   const handleCreateExpense = async () => {
-    if (!currentFamily) return;
+    if (!family) return;
     
     try {
-      await createExpense(currentFamily.id, {
+      await createExpense(family.id, {
         name: formData.name,
         description: formData.description,
         category_id: parseInt(formData.category_id),
@@ -78,23 +79,23 @@ export function Expenses() {
         frequency: 'once' as const,
       });
       // Refresh data
-      fetchExpenses(currentFamily.id);
-      fetchSummary(currentFamily.id);
-      fetchCategoryBreakdown(currentFamily.id);
+      fetchExpenses(family.id);
+      fetchSummary(family.id);
+      fetchCategoryBreakdown(family.id);
     } catch (err) {
       console.error('Failed to create expense:', err);
     }
   };
 
   const handleDeleteExpense = async (id: number) => {
-    if (!currentFamily) return;
+    if (!family) return;
     
     if (confirm('Tem certeza que deseja excluir esta despesa?')) {
       try {
-        await deleteExpense(currentFamily.id, id);
-        fetchExpenses(currentFamily.id);
-        fetchSummary(currentFamily.id);
-        fetchCategoryBreakdown(currentFamily.id);
+        await deleteExpense(family.id, id);
+        fetchExpenses(family.id);
+        fetchSummary(family.id);
+        fetchCategoryBreakdown(family.id);
       } catch (err) {
         console.error('Failed to delete expense:', err);
       }
@@ -103,10 +104,10 @@ export function Expenses() {
 
   const filters = ['Todas', 'Fixas', 'Variáveis'];
 
-  if (!currentFamily) {
+  if (!family) {
     return (
       <Card className="p-6">
-        <p className="text-gray-500">Selecione uma família para visualizar despesas</p>
+        <p className="text-gray-500">Nenhuma família encontrada</p>
       </Card>
     );
   }
