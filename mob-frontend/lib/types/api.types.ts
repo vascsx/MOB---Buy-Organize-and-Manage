@@ -252,13 +252,15 @@ export interface CreateInvestmentRequest {
 }
 
 // ===== EMERGENCY FUND =====
+
 export interface EmergencyFund {
   id: number;
   family_account_id: number;
   target_months: number;
-  target_amount_cents: number;
-  current_amount_cents: number;
-  monthly_goal_cents: number;
+  monthly_expenses: number; // em reais
+  target_amount: number; // em reais
+  current_amount: number; // em reais
+  monthly_goal: number; // em reais
   estimated_months: number;
   created_at: string;
   updated_at: string;
@@ -286,7 +288,8 @@ export interface EmergencyFundSuggestion {
 
 export interface CreateEmergencyFundRequest {
   target_months: number;
-  monthly_goal_cents: number;
+  monthly_expenses: number;
+  monthly_goal: number;
 }
 
 // ===== DASHBOARD =====

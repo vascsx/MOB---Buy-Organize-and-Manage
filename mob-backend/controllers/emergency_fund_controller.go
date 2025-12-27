@@ -19,23 +19,29 @@ func NewEmergencyFundController(emergencyService *services.EmergencyFundService)
 // CreateOrUpdateEmergencyFund cria ou atualiza reserva de emergência
 func (ctrl *EmergencyFundController) CreateOrUpdateEmergencyFund(c *gin.Context) {
 	familyID := c.GetUint("family_id")
-	
+
 	var input struct {
-		TargetMonths     int   `json:"target_months" binding:"required"`
-		MonthlyGoalCents int64 `json:"monthly_goal_cents" binding:"required"`
+		TargetMonths     int     `json:"target_months" binding:"required"`
+		MonthlyExpenses  float64 `json:"monthly_expenses" binding:"required"`
+		MonthlyGoal      float64 `json:"monthly_goal" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, 400, "Dados inválidos")
 		return
 	}
-	
-	fund, err := ctrl.emergencyService.CreateOrUpdateEmergencyFund(familyID, input.TargetMonths, input.MonthlyGoalCents)
+
+	fund, err := ctrl.emergencyService.CreateOrUpdateEmergencyFund(
+		familyID,
+		input.TargetMonths,
+		input.MonthlyExpenses,
+		input.MonthlyGoal,
+	)
 	if err != nil {
 		utils.ErrorResponse(c, 400, err.Error())
 		return
 	}
-	
+
 	utils.SuccessWithMessage(c, 200, "Reserva de emergência configurada com sucesso", fund)
 }
 

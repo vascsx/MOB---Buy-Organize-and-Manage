@@ -84,7 +84,7 @@ export function Dashboard() {
           investments={(data.investments.total_monthly || 0) * 100}
           available={(data.available_income || 0) * 100}
         />
-        <Alerts />
+        <Alerts alerts={data.alerts} />
       </div>
 
       {/* Saúde Financeira */}

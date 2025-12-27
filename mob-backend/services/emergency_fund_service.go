@@ -26,60 +26,57 @@ func NewEmergencyFundService(
 }
 
 // CreateOrUpdateEmergencyFund cria ou atualiza a reserva de emergência
-func (s *EmergencyFundService) CreateOrUpdateEmergencyFund(familyID uint, targetMonths int, monthlyGoalCents int64) (*models.EmergencyFund, error) {
+func (s *EmergencyFundService) CreateOrUpdateEmergencyFund(familyID uint, targetMonths int, monthlyExpenses float64, monthlyGoal float64) (*models.EmergencyFund, error) {
 	// Validações
 	validator := utils.NewValidator()
 	validator.Add(utils.ValidateTargetMonths(targetMonths))
-	validator.Add(utils.ValidatePositiveAmount(monthlyGoalCents, "monthly_goal_cents"))
-	
+	validator.Add(utils.ValidatePositiveFloat(monthlyExpenses, "monthly_expenses"))
+	validator.Add(utils.ValidatePositiveFloat(monthlyGoal, "monthly_goal"))
+
 	if validator.HasErrors() {
 		return nil, validator.GetErrors()
 	}
-	
-	// Calcular despesas mensais totais
-	totalExpenses, err := s.expenseRepo.CalculateTotalMonthlyExpenses(familyID)
-	if err != nil {
-		return nil, err
-	}
-	
-	// Calcular valor alvo
-	targetAmount := totalExpenses * int64(targetMonths)
-	
+
+	// Calcular valor alvo baseado no custo mensal informado pelo usuário
+	targetAmount := monthlyExpenses * float64(targetMonths)
+
 	// Verificar se já existe
 	exists, err := s.emergencyRepo.Exists(familyID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if exists {
 		// Atualizar existente
 		fund, err := s.emergencyRepo.GetByFamilyID(familyID)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		fund.TargetMonths = targetMonths
-		fund.TargetAmountCents = targetAmount
-		fund.MonthlyGoalCents = monthlyGoalCents
-		
+		fund.MonthlyExpenses = monthlyExpenses
+		fund.TargetAmount = targetAmount
+		fund.MonthlyGoal = monthlyGoal
+
 		// Recalcular meses estimados
 		s.calculateEstimatedMonths(fund)
-		
+
 		err = s.emergencyRepo.Update(fund)
 		return fund, err
-		
+
 	} else {
 		// Criar novo
 		fund := &models.EmergencyFund{
-			FamilyAccountID:    familyID,
-			TargetMonths:       targetMonths,
-			TargetAmountCents:  targetAmount,
-			CurrentAmountCents: 0,
-			MonthlyGoalCents:   monthlyGoalCents,
+			FamilyAccountID:      familyID,
+			TargetMonths:         targetMonths,
+			MonthlyExpenses:      monthlyExpenses,
+			TargetAmount:         targetAmount,
+			CurrentAmount:        0,
+			MonthlyGoal:          monthlyGoal,
 		}
-		
+
 		s.calculateEstimatedMonths(fund)
-		
+
 		err = s.emergencyRepo.Create(fund)
 		return fund, err
 	}

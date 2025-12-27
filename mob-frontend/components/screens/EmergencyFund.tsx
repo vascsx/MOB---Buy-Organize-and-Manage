@@ -30,6 +30,7 @@ export function EmergencyFund() {
   const [isAddAmountModalOpen, setIsAddAmountModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(6);
   const [monthlyContribution, setMonthlyContribution] = useState(800);
+  const [monthlyCost, setMonthlyCost] = useState(5000);
   const [amountToAdd, setAmountToAdd] = useState('');
 
   useEffect(() => {
@@ -49,21 +50,20 @@ export function EmergencyFund() {
   useEffect(() => {
     if (progress) {
       setSelectedGoal(progress.target_months);
-      setMonthlyContribution(progress.monthly_goal * 100); // converter reais para centavos
+      setMonthlyContribution(progress.monthly_goal);
+      setMonthlyCost(progress.monthly_expenses);
     }
   }, [progress]);
 
   const handleAddAmount = async () => {
     if (!family || !progress) return;
-    
-    const amountInCents = parseFloat(amountToAdd.replace(',', '.')) * 100;
-    if (isNaN(amountInCents) || amountInCents <= 0) {
+    const amount = parseFloat(amountToAdd.replace(',', '.'));
+    if (isNaN(amount) || amount <= 0) {
       alert('Informe um valor válido');
       return;
     }
-
     try {
-      const newTotal = (progress.current_amount * 100) + amountInCents;
+      const newTotal = progress.current_amount + amount;
       await updateCurrentAmount(family.id, newTotal);
       setAmountToAdd('');
       setIsAddAmountModalOpen(false);
@@ -74,11 +74,11 @@ export function EmergencyFund() {
 
   const handleSaveGoal = async () => {
     if (!family) return;
-    
     try {
       await createOrUpdate(family.id, {
         target_months: selectedGoal,
-        monthly_goal_cents: monthlyContribution,
+        monthly_expenses: monthlyCost,
+        monthly_goal: monthlyContribution,
       });
       setIsAdjustModalOpen(false);
       await fetchProgress(family.id);
@@ -89,11 +89,11 @@ export function EmergencyFund() {
 
   const handleApplySuggestion = async () => {
     if (!family || !suggestion) return;
-    
     try {
       await createOrUpdate(family.id, {
         target_months: 6, // padrão
-        monthly_goal_cents: suggestion.suggested_amount * 100,
+        monthly_expenses: suggestion.total_expenses,
+        monthly_goal: suggestion.suggested_amount,
       });
       await fetchProgress(family.id);
     } catch (err) {
@@ -117,16 +117,8 @@ export function EmergencyFund() {
     );
   }
 
-  if (error && !progress) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>Erro ao carregar dados: {error}</AlertDescription>
-      </Alert>
-    );
-  }
-
+  // Se não tem progress, mostrar tela de configuração inicial (mesmo com erro 404)
   if (!progress) {
-    // Estado inicial - criar meta
     return (
       <div className="space-y-6">
         <div>
@@ -147,8 +139,86 @@ export function EmergencyFund() {
             Configurar Agora
           </Button>
         </div>
+
+        {/* Modal de Ajustar Meta */}
+        <Dialog open={isAdjustModalOpen} onOpenChange={setIsAdjustModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Configurar Meta</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6 py-4">
+              <div>
+                <Label htmlFor="monthly-cost">Custo de Vida Mensal (R$)</Label>
+                <Input
+                  id="monthly-cost"
+                  type="number"
+                  value={monthlyCost}
+                  onChange={(e) => setMonthlyCost(parseFloat(e.target.value))}
+                  placeholder="5000"
+                  className="mt-2"
+                />
+                <p className="text-sm text-gray-500 mt-1">Suas despesas mensais totais</p>
+              </div>
+
+              <div>
+                <Label className="text-base font-medium">Quantos meses de despesas?</Label>
+                <div className="mt-4">
+                  <Slider
+                    value={[selectedGoal]}
+                    onValueChange={([value]) => setSelectedGoal(value)}
+                    min={3}
+                    max={12}
+                    step={1}
+                    className="mb-2"
+                  />
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>3 meses</span>
+                    <span className="font-bold text-lg text-[#3B82F6]">{selectedGoal} meses</span>
+                    <span>12 meses</span>
+                  </div>
+                </div>
+                {selectedGoal === 6 && (
+                  <Badge className="mt-2 bg-green-100 text-[#10B981] hover:bg-green-100">
+                    Recomendado por especialistas
+                  </Badge>
+                )}
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900">
+                    Meta: R$ {(monthlyCost * selectedGoal).toLocaleString()}
+                  </p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    {selectedGoal} meses × R$ {monthlyCost.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="monthly-contribution">Contribuição Mensal (R$)</Label>
+                <Input
+                  id="monthly-contribution"
+                  type="number"
+                  value={monthlyContribution / 100}
+                  onChange={(e) => setMonthlyContribution(parseFloat(e.target.value) * 100)}
+                  placeholder="800"
+                  className="mt-2"
+                />
+                <p className="text-sm text-gray-500 mt-1">Quanto pretende guardar por mês</p>
+              </div>
+
+              <Button onClick={handleSaveGoal} className="w-full bg-[#3B82F6] hover:bg-[#2563EB]">
+                Salvar Meta
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
+  }
+
+  // Se tem erro mas já tem progress carregado, mostrar o erro mas manter a UI
+  if (error) {
+    console.error('Erro ao carregar dados:', error);
   }
 
   const currentAmount = progress.current_amount;
