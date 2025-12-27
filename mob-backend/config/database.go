@@ -19,5 +19,19 @@ func InitDB() {
 		log.Fatal("Erro ao conectar no banco:", err)
 	}
 
-	DB.AutoMigrate(&models.User{}, &models.MesData{}, &models.Gasto{})
+	DB.AutoMigrate(
+		&models.User{},
+		&models.MesData{},
+		&models.Gasto{},
+		// Novos models
+		&models.FamilyAccount{},
+		&models.FamilyMember{},
+		&models.Income{},
+		&models.ExpenseCategory{},
+		&models.Expense{},
+		&models.ExpenseSplit{},
+		&models.Investment{},
+		&models.EmergencyFund{},
+		&models.Projection{},
+	)
 }

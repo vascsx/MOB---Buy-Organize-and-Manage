@@ -1,0 +1,205 @@
+package controllers
+
+import (
+	"finance-backend/services"
+	"finance-backend/utils"
+
+	"github.com/gin-gonic/gin"
+)
+
+type DashboardController struct {
+	incomeService     *services.IncomeService
+	expenseService    *services.ExpenseService
+	investmentService *services.InvestmentService
+	emergencyService  *services.EmergencyFundService
+}
+
+func NewDashboardController(
+	incomeService *services.IncomeService,
+	expenseService *services.ExpenseService,
+	investmentService *services.InvestmentService,
+	emergencyService *services.EmergencyFundService,
+) *DashboardController {
+	return &DashboardController{
+		incomeService:     incomeService,
+		expenseService:    expenseService,
+		investmentService: investmentService,
+		emergencyService:  emergencyService,
+	}
+}
+
+// GetDashboard retorna visão consolidada da família
+func (ctrl *DashboardController) GetDashboard(c *gin.Context) {
+	familyID := c.GetUint("family_id")
+	
+	// Buscar resumos
+	incomeSummary, _ := ctrl.incomeService.GetFamilyIncomeSummary(familyID)
+	expensesSummary, _ := ctrl.expenseService.GetFamilyExpensesSummary(familyID)
+	investmentsSummary, _ := ctrl.investmentService.GetInvestmentsSummary(familyID)
+	
+	// Reserva de emergência (pode não existir)
+	emergencyProgress, errEmergency := ctrl.emergencyService.GetEmergencyFundProgress(familyID)
+	
+	// Calcular saldo disponível
+	availableIncome := 0.0
+	if incomeSummary != nil && expensesSummary != nil {
+		availableIncome = incomeSummary.TotalNet - expensesSummary.TotalMonthly
+		if investmentsSummary != nil {
+			availableIncome -= investmentsSummary.TotalMonthly
+		}
+	}
+	
+	dashboard := map[string]interface{}{
+		"income":      incomeSummary,
+		"expenses":    expensesSummary,
+		"investments": investmentsSummary,
+		"available_income": availableIncome,
+	}
+	
+	if errEmergency == nil && emergencyProgress != nil {
+		dashboard["emergency_fund"] = emergencyProgress
+	}
+	
+	// Status financeiro geral
+	healthScore := ctrl.calculateFinancialHealth(incomeSummary, expensesSummary, investmentsSummary, emergencyProgress)
+	dashboard["financial_health_score"] = healthScore
+	
+	utils.SuccessResponse(c, 200, dashboard)
+}
+
+// calculateFinancialHealth calcula score de saúde financeira (0-100)
+func (ctrl *DashboardController) calculateFinancialHealth(
+	income *services.FamilyIncomeSummary,
+	expenses *services.ExpensesSummary,
+	investments *services.InvestmentsSummaryResponse,
+	emergency *services.EmergencyFundProgress,
+) int {
+	score := 0
+	
+	if income == nil || expenses == nil {
+		return 0
+	}
+	
+	// 1. Gastos < 70% da renda líquida (30 pontos)
+	if income.TotalNet > 0 {
+		expenseRatio := expenses.TotalMonthly / income.TotalNet
+		if expenseRatio < 0.5 {
+			score += 30
+		} else if expenseRatio < 0.7 {
+			score += 20
+		} else if expenseRatio < 0.9 {
+			score += 10
+		}
+	}
+	
+	// 2. Possui investimentos ativos (25 pontos)
+	if investments != nil && investments.TotalMonthly > 0 {
+		investmentRatio := investments.TotalMonthly / income.TotalNet
+		if investmentRatio >= 0.2 { // 20% ou mais
+			score += 25
+		} else if investmentRatio >= 0.1 { // 10% ou mais
+			score += 15
+		} else {
+			score += 5
+		}
+	}
+	
+	// 3. Reserva de emergência (25 pontos)
+	if emergency != nil {
+		if emergency.CompletionPercent >= 100 {
+			score += 25
+		} else if emergency.CompletionPercent >= 50 {
+			score += 15
+		} else if emergency.CompletionPercent > 0 {
+			score += 5
+		}
+	}
+	
+	// 4. Saldo positivo (20 pontos)
+	available := income.TotalNet - expenses.TotalMonthly
+	if investments != nil {
+		available -= investments.TotalMonthly
+	}
+	if available > 0 {
+		score += 20
+	}
+	
+	return score
+}
+
+// GetFinancialHealth retorna análise detalhada de saúde financeira
+func (ctrl *DashboardController) GetFinancialHealth(c *gin.Context) {
+	familyID := c.GetUint("family_id")
+	
+	incomeSummary, _ := ctrl.incomeService.GetFamilyIncomeSummary(familyID)
+	expensesSummary, _ := ctrl.expenseService.GetFamilyExpensesSummary(familyID)
+	investmentsSummary, _ := ctrl.investmentService.GetInvestmentsSummary(familyID)
+	emergencyProgress, _ := ctrl.emergencyService.GetEmergencyFundProgress(familyID)
+	
+	score := ctrl.calculateFinancialHealth(incomeSummary, expensesSummary, investmentsSummary, emergencyProgress)
+	
+	// Gerar recomendações
+	recommendations := []string{}
+	
+	if incomeSummary != nil && expensesSummary != nil {
+		expenseRatio := expensesSummary.TotalMonthly / incomeSummary.TotalNet
+		if expenseRatio > 0.7 {
+			recommendations = append(recommendations, "Suas despesas estão altas. Tente reduzir para menos de 70% da renda.")
+		}
+	}
+	
+	if investmentsSummary == nil || investmentsSummary.TotalMonthly == 0 {
+		recommendations = append(recommendations, "Comece a investir! Tente reservar pelo menos 10% da sua renda.")
+	}
+	
+	if emergencyProgress == nil {
+		recommendations = append(recommendations, "Configure uma reserva de emergência de 6 meses.")
+	} else if emergencyProgress.CompletionPercent < 100 {
+		recommendations = append(recommendations, "Continue construindo sua reserva de emergência.")
+	}
+	
+	result := map[string]interface{}{
+		"score":           score,
+		"level":           getHealthLevel(score),
+		"recommendations": recommendations,
+		"metrics": map[string]interface{}{
+			"expense_ratio":      calculateRatio(expensesSummary, incomeSummary),
+			"investment_ratio":   calculateInvestmentRatio(investmentsSummary, incomeSummary),
+			"emergency_progress": getEmergencyPercent(emergencyProgress),
+		},
+	}
+	
+	utils.SuccessResponse(c, 200, result)
+}
+
+func getHealthLevel(score int) string {
+	if score >= 80 {
+		return "Excelente"
+	} else if score >= 60 {
+		return "Bom"
+	} else if score >= 40 {
+		return "Regular"
+	}
+	return "Precisa melhorar"
+}
+
+func calculateRatio(expenses *services.ExpensesSummary, income *services.FamilyIncomeSummary) float64 {
+	if income == nil || expenses == nil || income.TotalNet == 0 {
+		return 0
+	}
+	return (expenses.TotalMonthly / income.TotalNet) * 100
+}
+
+func calculateInvestmentRatio(investments *services.InvestmentsSummaryResponse, income *services.FamilyIncomeSummary) float64 {
+	if income == nil || investments == nil || income.TotalNet == 0 {
+		return 0
+	}
+	return (investments.TotalMonthly / income.TotalNet) * 100
+}
+
+func getEmergencyPercent(emergency *services.EmergencyFundProgress) float64 {
+	if emergency == nil {
+		return 0
+	}
+	return emergency.CompletionPercent
+}
