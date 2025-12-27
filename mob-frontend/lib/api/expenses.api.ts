@@ -1,0 +1,91 @@
+/**
+ * Expenses API Endpoints
+ */
+
+import { apiClient } from './client';
+import type {
+  Expense,
+  ExpenseCategory,
+  ExpensesSummary,
+  CategorySummary,
+  CreateExpenseRequest,
+  ExpenseFilters,
+} from '../types/api.types';
+
+export const expensesApi = {
+  /**
+   * Buscar categorias de despesas
+   */
+  getCategories: async (familyId: number): Promise<ExpenseCategory[]> => {
+    const response = await apiClient.get<ExpenseCategory[]>(`/families/${familyId}/categories`);
+    return response.data;
+  },
+
+  /**
+   * Criar nova despesa
+   */
+  createExpense: async (familyId: number, data: CreateExpenseRequest): Promise<Expense> => {
+    const response = await apiClient.post<Expense>(`/families/${familyId}/expenses`, data);
+    return response.data;
+  },
+
+  /**
+   * Buscar despesas da família
+   */
+  getFamilyExpenses: async (familyId: number, filters?: ExpenseFilters): Promise<Expense[]> => {
+    const response = await apiClient.get<Expense[]>(`/families/${familyId}/expenses`, {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  /**
+   * Buscar resumo de despesas
+   */
+  getExpensesSummary: async (familyId: number): Promise<ExpensesSummary> => {
+    const response = await apiClient.get<ExpensesSummary>(
+      `/families/${familyId}/expenses/summary`
+    );
+    return response.data;
+  },
+
+  /**
+   * Buscar despesas por categoria
+   */
+  getExpensesByCategory: async (familyId: number): Promise<CategorySummary[]> => {
+    const response = await apiClient.get<CategorySummary[]>(
+      `/families/${familyId}/expenses/by-category`
+    );
+    return response.data;
+  },
+
+  /**
+   * Buscar despesa específica
+   */
+  getExpense: async (familyId: number, expenseId: number): Promise<Expense> => {
+    const response = await apiClient.get<Expense>(`/families/${familyId}/expenses/${expenseId}`);
+    return response.data;
+  },
+
+  /**
+   * Atualizar despesa
+   */
+  updateExpense: async (
+    familyId: number,
+    expenseId: number,
+    data: Partial<CreateExpenseRequest>
+  ): Promise<Expense> => {
+    const response = await apiClient.put<Expense>(
+      `/families/${familyId}/expenses/${expenseId}`,
+      data
+    );
+    return response.data;
+  },
+
+  /**
+   * Deletar despesa
+   */
+  deleteExpense: async (familyId: number, expenseId: number): Promise<void> => {
+    await apiClient.delete(`/families/${familyId}/expenses/${expenseId}`);
+  },
+};
