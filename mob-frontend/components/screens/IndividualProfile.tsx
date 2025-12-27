@@ -5,7 +5,8 @@ import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
-import { useIncomes, useFamilies } from '../../hooks';
+import { useIncomes } from '../../hooks';
+import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
 import type { Income, IncomeBreakdown } from '../../lib/types/api.types';
 
@@ -15,7 +16,7 @@ interface IndividualProfileProps {
 }
 
 export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) {
-  const { currentFamily } = useFamilies();
+  const { currentFamily } = useFamilyContext();
   const { incomes, breakdown, fetchIncomes, fetchBreakdown, isLoading, error } = useIncomes();
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
 
@@ -57,9 +58,46 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
     );
   }
 
-  if (isLoading || !selectedIncome || !breakdown) {
+  if (isLoading) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto">
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-60 w-full" />
+      </div>
+    );
+  }
+
+  // Se não há rendas cadastradas, mostrar estado inicial
+  if (incomes.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Rendas da Família</h1>
+        </div>
+
+        <Card className="bg-white rounded-lg p-12 text-center shadow-sm border border-gray-100">
+          <div className="text-6xl mb-4">💰</div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Nenhuma renda cadastrada</h2>
+          <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            Comece adicionando as rendas dos membros da família para ter um controle completo das finanças
+          </p>
+          <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white">
+            + Adicionar Renda
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!selectedIncome || !breakdown) {
+    return (
+      <div className="space-y-6">
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-60 w-full" />
       </div>
@@ -89,51 +127,54 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
   ];
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Voltar</span>
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {member?.name}
+            </h1>
+            <Badge variant="secondary" className="text-xs">
+              {selectedIncome.type.toUpperCase()}
+            </Badge>
+            {selectedIncome.is_active && (
+              <Badge className="bg-[#10B981] hover:bg-[#10B981]/90 text-white text-xs">
+                Ativo
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold">
-          {member?.name.toUpperCase()} - {selectedIncome.type.toUpperCase()}
-        </h1>
-        {selectedIncome.is_active && (
-          <Badge className="bg-[#10B981] hover:bg-[#10B981]/90 text-white">Ativo</Badge>
-        )}
       </div>
 
       {/* Card Renda Mensal */}
-      <Card className="bg-gradient-to-br from-[#3B82F6] to-[#2563EB] p-8 shadow-lg text-white">
-        <p className="text-base mb-2 opacity-90">💰 Renda Mensal</p>
+      <Card className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-lg p-6 shadow-sm border border-gray-100">
+        <p className="text-sm text-gray-700 mb-2">💰 Renda Mensal</p>
         <div className="mb-3">
-          <p className="text-5xl font-bold">{formatMoney(breakdown.net_monthly_cents)}</p>
+          <p className="text-4xl font-bold text-gray-900">{formatMoney(breakdown.net_monthly_cents)}</p>
+          <span className="text-gray-600 text-sm"> / mês</span>
         </div>
-        <p className="text-sm opacity-80 mb-1">Você recebe líquido</p>
-        <p className="text-sm opacity-60">
-          (Salário bruto: {formatMoney(breakdown.gross_monthly_cents)})
+        <p className="text-sm text-gray-600">
+          {formatMoney(breakdown.gross_monthly_cents)} bruto
         </p>
       </Card>
 
       {/* Descontos Automáticos */}
-      <Card className="p-6">
-        <h3 className="text-xl mb-5">📉 Descontos Automáticos</h3>
+      <Card className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+        <h3 className="text-xl font-semibold text-gray-900 mb-5">Descontos Automáticos</h3>
         <div className="space-y-5">
           {discounts.map((discount, index) => (
             <div key={index}>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-700">{discount.label}</span>
                 <div className="flex items-center gap-4">
-                  <span className="font-bold text-gray-900">
+                  <span className="font-semibold text-gray-900">
                     {formatMoney(discount.value)}
                   </span>
                   <span className="text-sm text-gray-500 min-w-[60px] text-right">
@@ -141,14 +182,18 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
                   </span>
                 </div>
               </div>
-              <div className="w-full bg-gray-100 rounded h-2 overflow-hidden">
+              <div className="w-full bg-gray-100 rounded-full h-6 overflow-hidden">
                 <div
-                  className="h-full rounded transition-all"
+                  className="h-full rounded-full flex items-center justify-end px-2 transition-all"
                   style={{
-                    width: `${discount.percentage}%`,
+                    width: `${Math.min(discount.percentage, 100)}%`,
                     backgroundColor: discount.color,
                   }}
-                />
+                >
+                  <span className="text-xs text-white font-medium">
+                    {formatPercentage(discount.percentage)}
+                  </span>
+                </div>
               </div>
             </div>
           ))}
@@ -158,25 +203,25 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
 
       {/* Benefícios Adicionais */}
       {(breakdown.food_voucher_cents > 0 || breakdown.transport_voucher_cents > 0 || breakdown.bonus_cents > 0) && (
-        <Card className="p-6">
-          <h3 className="text-xl mb-4">🎁 Benefícios Adicionais</h3>
-          <div className="space-y-2">
+        <Card className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">🎁 Benefícios Adicionais</h3>
+          <div className="space-y-3">
             {breakdown.food_voucher_cents > 0 && (
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-700">Vale Alimentação</span>
-                <span className="font-semibold">{formatMoney(breakdown.food_voucher_cents)}</span>
+                <span className="font-semibold text-gray-900">{formatMoney(breakdown.food_voucher_cents)}</span>
               </div>
             )}
             {breakdown.transport_voucher_cents > 0 && (
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-700">Vale Transporte</span>
-                <span className="font-semibold">{formatMoney(breakdown.transport_voucher_cents)}</span>
+                <span className="font-semibold text-gray-900">{formatMoney(breakdown.transport_voucher_cents)}</span>
               </div>
             )}
             {breakdown.bonus_cents > 0 && (
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-700">Bônus</span>
-                <span className="font-semibold">{formatMoney(breakdown.bonus_cents)}</span>
+                <span className="font-semibold text-gray-900">{formatMoney(breakdown.bonus_cents)}</span>
               </div>
             )}
           </div>
@@ -185,13 +230,13 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
 
       {/* Call to Action */}
       {selectedIncome?.type === 'clt' && (
-        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-          <h4 className="text-base font-medium mb-2">🔄 Simular Mudança CLT → PJ</h4>
+        <Card className="bg-gradient-to-br from-[#F0F9FF] to-[#E0F2FE] rounded-lg p-6 shadow-sm border border-blue-100">
+          <h4 className="text-base font-semibold text-gray-900 mb-2">🔄 Simular Mudança CLT → PJ</h4>
           <p className="text-sm text-gray-600 mb-4">
             Veja quanto você ganharia trabalhando como PJ
           </p>
-          <Button className="bg-[#3B82F6] hover:bg-[#2563EB]">Ver simulação</Button>
-        </div>
+          <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white">Ver simulação</Button>
+        </Card>
       )}
     </div>
   );

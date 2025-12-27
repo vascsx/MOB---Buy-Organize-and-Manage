@@ -1,3 +1,4 @@
+import React from 'react';
 import { Bell, ChevronDown, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback } from './ui/avatar';
 

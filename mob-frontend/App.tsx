@@ -7,6 +7,9 @@ import { EmergencyFund } from './components/screens/EmergencyFund';
 import { Projections } from './components/screens/Projections';
 import { Settings } from './components/screens/Settings';
 import { FamilyOnboarding } from './components/screens/FamilyOnboarding';
+import { AppHeader } from './components/AppHeader';
+import { AppSidebar } from './components/AppSidebar';
+import { MobileNav } from './components/MobileNav';
 import { useFamilyContext } from './contexts/FamilyContext';
 import { Skeleton } from './components/ui/skeleton';
 
@@ -70,12 +73,31 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
-        <div className="max-w-7xl mx-auto">
-          {renderScreen()}
-        </div>
-      </main>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <AppSidebar 
+        activeItem={activeMenuItem} 
+        onItemClick={setActiveMenuItem} 
+      />
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <AppHeader onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+
+        {/* Content */}
+        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
+          <div className="max-w-7xl mx-auto">
+            {renderScreen()}
+          </div>
+        </main>
+
+        {/* Mobile Navigation */}
+        <MobileNav 
+          activeItem={activeMenuItem} 
+          onItemClick={setActiveMenuItem} 
+        />
+      </div>
     </div>
   );
 }

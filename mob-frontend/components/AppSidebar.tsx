@@ -1,3 +1,4 @@
+import React from 'react';
 import { LayoutDashboard, TrendingUp, TrendingDown, PiggyBank, Wallet, BarChart3, Settings } from 'lucide-react';
 
 interface SidebarProps {

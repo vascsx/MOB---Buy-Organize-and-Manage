@@ -1,3 +1,4 @@
+import React from 'react';
 import { LayoutDashboard, TrendingUp, TrendingDown, PiggyBank, Settings } from 'lucide-react';
 
 interface MobileNavProps {
