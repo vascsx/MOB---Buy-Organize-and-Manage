@@ -30,8 +30,8 @@ func main() {
 	r := gin.New()
 	
 	// Middlewares de logging e recovery
-	r.Use(logger.GinLogger())
-	r.Use(logger.GinRecovery())
+	r.Use(utils.GinLogger())
+	r.Use(utils.GinRecovery())
 
 	// Middleware CORS
 	r.Use(corsMiddleware())

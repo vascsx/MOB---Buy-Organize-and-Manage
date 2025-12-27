@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import App from './App';
 import { Login } from './components/screens/Login';
 import { Register } from './components/screens/Register';
+import { FamilyProvider } from './contexts/FamilyContext';
 
 function LoginWrapper() {
   const navigate = useNavigate();
@@ -29,13 +30,15 @@ function RegisterWrapper() {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginWrapper />} />
-        <Route path="/register" element={<RegisterWrapper />} />
-        <Route path="/dashboard" element={<App />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <FamilyProvider>
+        <Routes>
+          <Route path="/login" element={<LoginWrapper />} />
+          <Route path="/register" element={<RegisterWrapper />} />
+          <Route path="/dashboard" element={<App />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </FamilyProvider>
     </BrowserRouter>
   </React.StrictMode>
 );

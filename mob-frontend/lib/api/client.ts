@@ -33,9 +33,13 @@ apiClient.interceptors.request.use(
 );
 
 // ===== RESPONSE INTERCEPTOR =====
-// Trata erros globalmente
+// Trata erros globalmente e extrai o campo 'data' das respostas
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    // Se a resposta tem o formato {success: true, data: ...}, extrair o campo data
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      response.data = response.data.data;
+    }
     return response;
   },
   (error: AxiosError) => {

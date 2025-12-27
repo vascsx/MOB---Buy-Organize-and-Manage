@@ -1,9 +1,4 @@
-/**
- * useFamilies Hook
- * Gerencia famílias e membros
- */
-
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { familiesApi } from '../lib/api/families.api';
 import { getErrorMessage } from '../lib/api/client';
 import type {
@@ -13,7 +8,7 @@ import type {
   CreateMemberInput,
 } from '../lib/types/api.types';
 
-interface UseFamiliesReturn {
+interface FamilyContextValue {
   families: FamilyAccount[];
   currentFamily: FamilyAccount | null;
   members: FamilyMember[];
@@ -31,7 +26,9 @@ interface UseFamiliesReturn {
   clearError: () => void;
 }
 
-export const useFamilies = (): UseFamiliesReturn => {
+const FamilyContext = createContext<FamilyContextValue | undefined>(undefined);
+
+export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [families, setFamilies] = useState<FamilyAccount[]>([]);
   const [currentFamily, setCurrentFamily] = useState<FamilyAccount | null>(null);
   const [members, setMembers] = useState<FamilyMember[]>([]);
@@ -208,9 +205,9 @@ export const useFamilies = (): UseFamiliesReturn => {
     if (savedFamilyId && !currentFamily) {
       selectFamily(Number(savedFamilyId));
     }
-  }, [currentFamily, selectFamily]);
+  }, []);
 
-  return {
+  const value: FamilyContextValue = {
     families,
     currentFamily,
     members,
@@ -227,4 +224,14 @@ export const useFamilies = (): UseFamiliesReturn => {
     removeMember,
     clearError,
   };
+
+  return <FamilyContext.Provider value={value}>{children}</FamilyContext.Provider>;
+};
+
+export const useFamilyContext = () => {
+  const context = useContext(FamilyContext);
+  if (context === undefined) {
+    throw new Error('useFamilyContext must be used within a FamilyProvider');
+  }
+  return context;
 };

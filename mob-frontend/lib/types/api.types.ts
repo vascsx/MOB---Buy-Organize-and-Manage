@@ -92,10 +92,12 @@ export interface IncomeBreakdown {
 export interface IncomeSummary {
   total_gross: number;
   total_net: number;
-  total_inss: number;
-  total_irpf: number;
-  total_fgts: number;
-  member_incomes: MemberIncome[];
+  total_tax: number;
+  total_inss?: number;
+  total_irpf?: number;
+  total_fgts?: number;
+  members: MemberIncome[];
+  member_incomes?: MemberIncome[]; // Deprecated, use members
 }
 
 export interface MemberIncome {
@@ -284,13 +286,13 @@ export interface CreateEmergencyFundRequest {
 
 // ===== DASHBOARD =====
 export interface DashboardData {
-  income_summary: IncomeSummary;
-  expenses_summary: ExpensesSummary;
-  investments_summary: InvestmentsSummary;
+  income: IncomeSummary;
+  expenses: ExpensesSummary;
+  investments: InvestmentsSummary;
   emergency_fund_progress?: EmergencyFundProgress;
   available_income: number;
   financial_health_score: number;
-  alerts: Alert[];
+  alerts?: Alert[];
 }
 
 export interface Alert {

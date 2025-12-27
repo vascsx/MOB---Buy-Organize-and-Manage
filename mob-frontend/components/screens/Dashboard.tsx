@@ -1,13 +1,18 @@
 import React, { useEffect } from 'react';
-import { useFamilies, useDashboard } from '../../hooks';
+import { useDashboard } from '../../hooks';
+import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney } from '../../lib/utils/money';
-import { Card } from '../ui/card';
-import { Badge } from '../ui/badge';
+import { IncomeCard } from '../IncomeCard';
+import { PersonCard } from '../PersonCard';
+import { MonthSummary } from '../MonthSummary';
+import { Alerts } from '../Alerts';
+import { FinancialHealth } from '../FinancialHealth';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
+import { Card } from '../ui/card';
 
 export function Dashboard() {
-  const { currentFamily } = useFamilies();
+  const { currentFamily } = useFamilyContext();
   const { data, isLoading, error, fetchDashboard } = useDashboard();
 
   useEffect(() => {
@@ -47,125 +52,43 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Hero Card - Renda Líquida */}
-      <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-8">
-        <p className="text-sm opacity-90 mb-2">💰 Renda Líquida da Família</p>
-        <h2 className="text-4xl font-bold mb-2">
-          {formatMoney(data.income_summary.total_net)} / mês
-        </h2>
-        <p className="text-sm opacity-80">
-          ({formatMoney(data.income_summary.total_gross)} bruto -{' '}
-          {formatMoney(data.income_summary.total_inss + data.income_summary.total_irpf)} impostos)
-        </p>
-      </Card>
+      <IncomeCard 
+        totalNet={data.income.total_net}
+        totalGross={data.income.total_gross}
+        totalTax={data.income.total_tax}
+      />
 
       {/* Por Pessoa - Grid 2 colunas */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4">👥 Por Pessoa</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.income_summary.member_incomes.map((member) => (
-            <Card key={member.member_id} className="p-6">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-semibold text-lg">{member.member_name}</h3>
-                  <Badge variant="secondary" className="mt-1">
-                    {member.type.toUpperCase()}
-                  </Badge>
-                </div>
-                {member.is_active && (
-                  <Badge className="bg-green-500">✅ Ativo</Badge>
-                )}
-              </div>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatMoney(member.net_monthly_cents)}
-              </p>
-              <p className="text-sm text-gray-600">
-                Bruto: {formatMoney(member.gross_monthly_cents)}
-              </p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Resumo do Mês */}
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4">📊 Resumo do Mês</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-700">💸 Despesas</span>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">
-                {formatMoney(data.expenses_summary.total_monthly)}
-              </span>
-              <span className="text-sm text-gray-500">
-                ({((data.expenses_summary.total_monthly / data.income_summary.total_net) * 100).toFixed(0)}%)
-              </span>
-            </div>
-          </div>
-          
-          {data.investments_summary && (
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">📈 Investimentos</span>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">
-                  {formatMoney(data.investments_summary.total_monthly)}
-                </span>
-                <span className="text-sm text-gray-500">
-                  ({((data.investments_summary.total_monthly / data.income_summary.total_net) * 100).toFixed(0)}%)
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-2 border-t">
-            <span className="text-gray-700 font-medium">🎉 Sobrou</span>
-            <span className="font-bold text-green-600">
-              {formatMoney(data.available_income)}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Alertas */}
-      {data.alerts && data.alerts.length > 0 && (
-        <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">⚠️ Alertas</h3>
-          <div className="space-y-2">
-            {data.alerts.map((alert, index) => (
-              <Alert 
-                key={index}
-                variant={alert.type === 'success' ? 'default' : alert.type === 'warning' ? 'destructive' : 'default'}
-              >
-                <AlertDescription>{alert.message}</AlertDescription>
-              </Alert>
+      {data.income.members && data.income.members.length > 0 && (
+        <section>
+          <h2 className="text-xl mb-4">Por Pessoa</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data.income.members.map((member: any) => (
+              <PersonCard
+                key={member.member_id}
+                name={member.member_name}
+                amount={formatMoney(member.net_monthly_cents || 0)}
+                type={member.type?.toUpperCase() || 'N/A'}
+                status={member.is_active ? 'Ativo' : 'Inativo'}
+              />
             ))}
           </div>
-        </Card>
+        </section>
       )}
 
-      {/* Saúde Financeira */}
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4">🎯 Saúde Financeira</h3>
-        <div className="flex items-center gap-4 mb-4">
-          <div className="text-5xl font-bold text-blue-600">
-            {data.financial_health_score}
-          </div>
-          <div className="text-2xl text-gray-600">/100</div>
-          <Badge className="ml-auto" variant={
-            data.financial_health_score >= 80 ? 'default' :
-            data.financial_health_score >= 60 ? 'secondary' : 'destructive'
-          }>
-            {data.financial_health_score >= 80 ? 'Excelente' :
-             data.financial_health_score >= 60 ? 'Bom' : 'Precisa melhorar'}
-          </Badge>
-        </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all"
-            style={{ width: `${data.financial_health_score}%` }}
-          />
-        </div>
-      </Card>
+      {/* Grid 2 colunas para Resumo e Alertas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MonthSummary 
+          totalNet={data.income.total_net}
+          expenses={data.expenses.total_monthly}
+          investments={data.investments.total_monthly}
+          available={data.available_income}
+        />
+        <Alerts />
+      </div>
 
+      {/* Saúde Financeira */}
+      <FinancialHealth score={data.financial_health_score} />
     </div>
   );
 }
