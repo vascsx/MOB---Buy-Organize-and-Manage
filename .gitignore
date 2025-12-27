@@ -1,26 +1,57 @@
+# Environment variables
+.env
+.env.local
+.env.production
+
 # Go
-/bin/
-/obj/
-/*.exe
-/*.dll
-/*.so
-/*.dylib
-/*.test
-/vendor/
-/go.sum
-/go.mod
+/mob-backend/bin/
+/mob-backend/tmp/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
 
-# IDEs
-.vscode/
-.idea/
+# Keep go.mod and go.sum (necessários para builds)
+# /go.sum
+# /go.mod
 
-# Node / Front-end
+# Node / Frontend
 node_modules/
 dist/
 build/
 *.log
-.env
 .DS_Store
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # OS
 Thumbs.db
+.DS_Store
+
+# Docker
+docker-compose.override.yml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Coverage
+coverage/
+*.coverprofile
+
+# Temporary files
+tmp/
+temp/
+*.tmp
