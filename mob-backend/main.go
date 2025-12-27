@@ -8,13 +8,13 @@ import (
 
 	"finance-backend/config"
 	"finance-backend/routes"
-	"finance-backend/utils/logger"
+	"finance-backend/utils"
 )
 
 func main() {
 	// Inicializa logger estruturado
-	logger.InitLogger("mob-finance-backend")
-	log := logger.GetLogger()
+	utils.InitLogger("mob-finance-backend")
+	log := utils.GetLogger()
 	
 	// Inicializa banco de dados
 	config.InitDB()

@@ -9,13 +9,13 @@ import (
 	"gorm.io/gorm/logger"
 
 	"finance-backend/models"
-	appLogger "finance-backend/utils/logger"
+	"finance-backend/utils"
 )
 
 var DB *gorm.DB
 
 func InitDB() {
-	log := appLogger.GetLogger()
+	log := utils.GetLogger()
 	
 	// Lê variáveis de ambiente
 	dbHost := getEnv("DB_HOST", "localhost")
