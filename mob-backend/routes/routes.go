@@ -38,11 +38,6 @@ func SetupRoutes(r *gin.Engine) {
 	r.POST("/api/auth/register", controllers.Register)
 	r.POST("/api/auth/login", controllers.Login)
 	
-	// Health check
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
-	
 	// ===== ROTAS PROTEGIDAS =====
 	api := r.Group("/api")
 	api.Use(middleware.AuthMiddleware())
