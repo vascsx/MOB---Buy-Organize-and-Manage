@@ -24,7 +24,6 @@ export function EditIncomeModal({ isOpen, onClose, onSuccess, income }: EditInco
   const [formData, setFormData] = useState<CreateIncomeRequest>({
     family_member_id: income.family_member_id,
     type: income.type.toLowerCase() as 'clt' | 'pj',
-    gross_monthly_cents: income.gross_monthly_cents,
     net_monthly_cents: income.net_monthly_cents || 0,
     food_voucher_cents: income.food_voucher_cents || 0,
     transport_voucher_cents: income.transport_voucher_cents || 0,
@@ -36,7 +35,6 @@ export function EditIncomeModal({ isOpen, onClose, onSuccess, income }: EditInco
     setFormData({
       family_member_id: income.family_member_id,
       type: income.type.toLowerCase() as 'clt' | 'pj',
-      gross_monthly_cents: income.gross_monthly_cents,
       net_monthly_cents: income.net_monthly_cents || 0,
       food_voucher_cents: income.food_voucher_cents || 0,
       transport_voucher_cents: income.transport_voucher_cents || 0,
@@ -61,13 +59,8 @@ export function EditIncomeModal({ isOpen, onClose, onSuccess, income }: EditInco
       return;
     }
 
-    if (formData.gross_monthly_cents <= 0) {
-      setError('O salário bruto deve ser maior que zero');
-      return;
-    }
-
     if (formData.net_monthly_cents <= 0) {
-      setError('O salário líquido deve ser maior que zero');
+      setError('A renda líquida deve ser maior que zero');
       return;
     }
 
@@ -166,31 +159,18 @@ export function EditIncomeModal({ isOpen, onClose, onSuccess, income }: EditInco
             </Select>
           </div>
 
-          {/* Salários */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="gross">Salário Bruto (R$) *</Label>
-              <Input
-                id="gross"
-                type="text"
-                placeholder="0,00"
-                value={formatMoneyDisplay(formData.gross_monthly_cents)}
-                onChange={(e) => handleMoneyInput('gross_monthly_cents', e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="net">Salário Líquido (R$) *</Label>
-              <Input
-                id="net"
-                type="text"
-                placeholder="0,00"
-                value={formatMoneyDisplay(formData.net_monthly_cents)}
-                onChange={(e) => handleMoneyInput('net_monthly_cents', e.target.value)}
-                required
-              />
-            </div>
+          {/* Renda Líquida */}
+          <div className="space-y-2">
+            <Label htmlFor="net">Renda Líquida Mensal (R$) *</Label>
+            <Input
+              id="net"
+              type="text"
+              placeholder="0,00"
+              value={formatMoneyDisplay(formData.net_monthly_cents)}
+              onChange={(e) => handleMoneyInput('net_monthly_cents', e.target.value)}
+              required
+            />
+            <p className="text-xs text-gray-500">Informe o valor que você recebe após os descontos</p>
           </div>
 
           {/* Benefícios */}

@@ -15,7 +15,7 @@ type Income struct {
 	Type           IncomeType `gorm:"not null" json:"type"`
 
 	// Valores em centavos (int64)
-	GrossMonthlyCents int64 `gorm:"not null" json:"gross_monthly_cents"` // renda bruta
+	GrossMonthlyCents int64 `gorm:"default:0" json:"gross_monthly_cents"` // renda bruta (opcional)
 
 	// Benefícios (opcionais)
 	FoodVoucherCents      int64 `gorm:"default:0" json:"food_voucher_cents"`
@@ -31,8 +31,8 @@ type Income struct {
 	FGTSCents int64 `gorm:"default:0" json:"fgts_cents"`
 	IRPFCents int64 `gorm:"default:0" json:"irpf_cents"`
 
-	// Líquido (calculado)
-	NetMonthlyCents int64 `gorm:"default:0" json:"net_monthly_cents"`
+	// Líquido (obrigatório)
+	NetMonthlyCents int64 `gorm:"not null" json:"net_monthly_cents"`
 
 	IsActive  bool      `gorm:"default:true" json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`

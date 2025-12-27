@@ -6,6 +6,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useInvestments } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney } from '../../lib/utils/money';
+import { getInvestmentTypeIcon, getInvestmentTypeName } from '../../lib/utils/investment';
+import { AddInvestmentModal } from '../AddInvestmentModal';
 
 export function Investments() {
   const { family } = useFamilyContext();
@@ -23,6 +25,7 @@ export function Investments() {
   } = useInvestments();
 
   const [selectedTab, setSelectedTab] = useState('60'); // 5 anos em meses
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     if (family) {
@@ -67,7 +70,10 @@ export function Investments() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">📈 Investimentos</h1>
-        <Button className="bg-[#3B82F6] hover:bg-[#2563EB]">
+        <Button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-[#3B82F6] hover:bg-[#2563EB]"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Investimento
         </Button>
@@ -80,10 +86,13 @@ export function Investments() {
           <p className="text-base">Patrimônio Total Investido</p>
         </div>
         <p className="text-5xl font-bold text-gray-900 mb-2">
-          {formatMoney(summary?.total_invested || 0)}
+          {formatMoney((summary?.total_balance || 0) * 100)}
         </p>
         <p className="text-sm text-gray-700">
           {investments.length} investimento{investments.length !== 1 ? 's' : ''} ativo{investments.length !== 1 ? 's' : ''}
+          {summary?.total_monthly && summary.total_monthly > 0 && (
+            <span className="ml-2">• Aporte mensal: {formatMoney((summary.total_monthly || 0) * 100)}</span>
+          )}
         </p>
       </Card>
 
@@ -191,19 +200,18 @@ export function Investments() {
               >
                 <div className="flex items-center gap-4">
                   <span className="text-3xl">
-                    {investment.type === 'stock' ? '📈' : 
-                     investment.type === 'crypto' ? '₿' : '🏛️'}
+                    {getInvestmentTypeIcon(investment.type)}
                   </span>
                   <div>
                     <h4 className="font-bold">{investment.name}</h4>
                     <p className="text-sm text-gray-600">
-                      {investment.type.toUpperCase()} • {investment.annual_return_rate}% a.a.
+                      {getInvestmentTypeName(investment.type)} • {investment.annual_return_rate}% a.a.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-xl font-bold">{formatMoney(investment.current_amount_cents)}</p>
+                    <p className="text-xl font-bold">{formatMoney(investment.current_balance_cents)}</p>
                     <p className="text-sm text-gray-500">Aporte mensal: {formatMoney(investment.monthly_contribution_cents)}</p>
                   </div>
                 </div>
@@ -214,6 +222,22 @@ export function Investments() {
           <p className="text-gray-500 text-center py-10">Nenhum investimento cadastrado</p>
         )}
       </Card>
+
+      {/* Modal de Adicionar Investimento */}
+      {showAddModal && (
+        <AddInvestmentModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={async () => {
+            setShowAddModal(false);
+            if (family) {
+              await fetchInvestments(family.id);
+              await fetchSummary(family.id);
+              await fetchProjections(family.id, parseInt(selectedTab));
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

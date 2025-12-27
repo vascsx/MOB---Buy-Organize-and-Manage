@@ -23,7 +23,6 @@ export function AddIncomeModal({ isOpen, onClose, onSuccess }: AddIncomeModalPro
   const [formData, setFormData] = useState<CreateIncomeRequest>({
     family_member_id: 0,
     type: 'clt',
-    gross_monthly_cents: 0,
     net_monthly_cents: 0,
     food_voucher_cents: 0,
     transport_voucher_cents: 0,
@@ -47,13 +46,8 @@ export function AddIncomeModal({ isOpen, onClose, onSuccess }: AddIncomeModalPro
       return;
     }
 
-    if (formData.gross_monthly_cents <= 0) {
-      setError('Informe o salário bruto');
-      return;
-    }
-
     if (formData.net_monthly_cents <= 0) {
-      setError('Informe o salário líquido');
+      setError('Informe a renda líquida');
       return;
     }
 
@@ -153,26 +147,9 @@ export function AddIncomeModal({ isOpen, onClose, onSuccess }: AddIncomeModalPro
             </Select>
           </div>
 
-          {/* Salário Bruto */}
+          {/* Renda Líquida */}
           <div>
-            <Label htmlFor="gross">Salário Bruto Mensal *</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
-              <Input
-                id="gross"
-                type="text"
-                value={formatMoneyDisplay(formData.gross_monthly_cents)}
-                onChange={(e) => handleMoneyInput('gross_monthly_cents', e.target.value)}
-                className="pl-12"
-                placeholder="0,00"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Salário Líquido */}
-          <div>
-            <Label htmlFor="net">Salário Líquido Mensal *</Label>
+            <Label htmlFor="net">Renda Líquida Mensal *</Label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
               <Input
@@ -185,6 +162,7 @@ export function AddIncomeModal({ isOpen, onClose, onSuccess }: AddIncomeModalPro
                 required
               />
             </div>
+            <p className="text-xs text-gray-500 mt-1">Informe o valor que você recebe após os descontos</p>
           </div>
 
           {/* Vale Alimentação */}

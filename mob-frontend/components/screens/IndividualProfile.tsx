@@ -252,15 +252,9 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-lg p-4">
-                  <p className="text-sm text-gray-700 mb-1">💰 Renda Líquida</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatMoney(income.net_monthly_cents || 0)}</p>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-700 mb-1">📊 Renda Bruta</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatMoney(income.gross_monthly_cents)}</p>
-                </div>
+              <div className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-lg p-4">
+                <p className="text-sm text-gray-700 mb-1">💰 Renda Líquida Mensal</p>
+                <p className="text-2xl font-bold text-gray-900">{formatMoney(income.net_monthly_cents || 0)}</p>
               </div>
 
               {/* Benefícios */}

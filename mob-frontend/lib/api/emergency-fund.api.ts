@@ -64,4 +64,13 @@ export const emergencyFundApi = {
     );
     return response.data;
   },
+
+  /**
+   * Atualizar valor atual da reserva
+   */
+  updateCurrentAmount: async (familyId: number, amountCents: number): Promise<void> => {
+    await apiClient.put(`/families/${familyId}/emergency-fund/current-amount`, {
+      current_amount_cents: amountCents,
+    });
+  },
 };

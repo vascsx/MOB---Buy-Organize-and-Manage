@@ -26,6 +26,7 @@ interface UseEmergencyFundReturn {
   fetchSuggestion: (familyId: number) => Promise<void>;
   fetchProjection: (familyId: number, months?: number) => Promise<void>;
   createOrUpdate: (familyId: number, data: CreateEmergencyFundRequest) => Promise<EmergencyFund>;
+  updateCurrentAmount: (familyId: number, amountCents: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -107,6 +108,24 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
     []
   );
 
+  const updateCurrentAmount = useCallback(
+    async (familyId: number, amountCents: number): Promise<void> => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        await emergencyFundApi.updateCurrentAmount(familyId, amountCents);
+        // Atualizar progresso após a mudança
+        await fetchProgress(familyId);
+      } catch (err) {
+        setError(getErrorMessage(err));
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchProgress]
+  );
+
   const clearError = () => setError(null);
 
   return {
@@ -121,6 +140,7 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
     fetchSuggestion,
     fetchProjection,
     createOrUpdate,
+    updateCurrentAmount,
     clearError,
   };
 };

@@ -24,7 +24,8 @@ func (ctrl *IncomeController) CreateIncome(c *gin.Context) {
 	var input struct {
 		FamilyMemberID        uint    `json:"family_member_id" binding:"required"`
 		Type                  string  `json:"type" binding:"required"`
-		GrossMonthlyCents     int64   `json:"gross_monthly_cents" binding:"required"`
+		NetMonthlyCents       int64   `json:"net_monthly_cents" binding:"required"`
+		GrossMonthlyCents     int64   `json:"gross_monthly_cents"`
 		FoodVoucherCents      int64   `json:"food_voucher_cents"`
 		TransportVoucherCents int64   `json:"transport_voucher_cents"`
 		BonusCents            int64   `json:"bonus_cents"`
@@ -46,6 +47,7 @@ func (ctrl *IncomeController) CreateIncome(c *gin.Context) {
 	income := &models.Income{
 		FamilyMemberID:        input.FamilyMemberID,
 		Type:                  models.IncomeType(input.Type),
+		NetMonthlyCents:       input.NetMonthlyCents,
 		GrossMonthlyCents:     input.GrossMonthlyCents,
 		FoodVoucherCents:      input.FoodVoucherCents,
 		TransportVoucherCents: input.TransportVoucherCents,
@@ -128,6 +130,7 @@ func (ctrl *IncomeController) UpdateIncome(c *gin.Context) {
 	
 	var input struct {
 		Type                  string  `json:"type"`
+		NetMonthlyCents       int64   `json:"net_monthly_cents"`
 		GrossMonthlyCents     int64   `json:"gross_monthly_cents"`
 		FoodVoucherCents      int64   `json:"food_voucher_cents"`
 		TransportVoucherCents int64   `json:"transport_voucher_cents"`
@@ -143,6 +146,9 @@ func (ctrl *IncomeController) UpdateIncome(c *gin.Context) {
 	
 	if input.Type != "" {
 		income.Type = models.IncomeType(input.Type)
+	}
+	if input.NetMonthlyCents > 0 {
+		income.NetMonthlyCents = input.NetMonthlyCents
 	}
 	if input.GrossMonthlyCents > 0 {
 		income.GrossMonthlyCents = input.GrossMonthlyCents

@@ -71,10 +71,24 @@ apiClient.interceptors.response.use(
  */
 export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ error?: string; message?: string }>;
+    const axiosError = error as AxiosError<{ 
+      error?: string; 
+      message?: string;
+      errors?: Array<{ field: string; message: string }>;
+    }>;
+    
+    // Se houver erros de validação detalhados
+    if (axiosError.response?.data?.errors && Array.isArray(axiosError.response.data.errors)) {
+      const errorMessages = axiosError.response.data.errors
+        .map(err => `${err.field}: ${err.message}`)
+        .join(', ');
+      return errorMessages;
+    }
+    
     return (
-      axiosError.response?.data?.error ||
       axiosError.response?.data?.message ||
+      axiosError.response?.data?.error ||
+      axiosError.message ||
       'Erro desconhecido'
     );
   }

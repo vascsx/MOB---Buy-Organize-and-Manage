@@ -20,13 +20,13 @@ func NewIncomeService(incomeRepo *repositories.IncomeRepository, familyRepo *rep
 	}
 }
 
-// CreateIncome cria uma nova renda e calcula valores líquidos automaticamente
+// CreateIncome cria uma nova renda usando o valor líquido informado
 func (s *IncomeService) CreateIncome(income *models.Income) error {
 	// Validações
 	validator := utils.NewValidator()
 	
 	validator.Add(utils.ValidateIncomeType(string(income.Type)))
-	validator.Add(utils.ValidatePositiveAmount(income.GrossMonthlyCents, "gross_monthly_cents"))
+	validator.Add(utils.ValidatePositiveAmount(income.NetMonthlyCents, "net_monthly_cents"))
 	
 	if income.Type == models.IncomePJ {
 		validator.Add(utils.ValidatePercentage(income.SimplesNacionalRate, "simples_nacional_rate"))
@@ -36,8 +36,10 @@ func (s *IncomeService) CreateIncome(income *models.Income) error {
 		return validator.GetErrors()
 	}
 	
-	// Calcular valores líquidos
-	s.CalculateNetIncome(income)
+	// Se gross_monthly_cents não foi informado, usar o net_monthly_cents como base
+	if income.GrossMonthlyCents == 0 {
+		income.GrossMonthlyCents = income.NetMonthlyCents
+	}
 	
 	// Usar transação para garantir atomicidade
 	return s.incomeRepo.CreateWithTransaction(func(repo *repositories.IncomeRepository) error {
@@ -54,13 +56,13 @@ func (s *IncomeService) CreateIncome(income *models.Income) error {
 	})
 }
 
-// UpdateIncome atualiza uma renda e recalcula valores
+// UpdateIncome atualiza uma renda usando o valor líquido informado
 func (s *IncomeService) UpdateIncome(income *models.Income) error {
 	// Validações
 	validator := utils.NewValidator()
 	
 	validator.Add(utils.ValidateIncomeType(string(income.Type)))
-	validator.Add(utils.ValidatePositiveAmount(income.GrossMonthlyCents, "gross_monthly_cents"))
+	validator.Add(utils.ValidatePositiveAmount(income.NetMonthlyCents, "net_monthly_cents"))
 	
 	if income.Type == models.IncomePJ {
 		validator.Add(utils.ValidatePercentage(income.SimplesNacionalRate, "simples_nacional_rate"))
@@ -70,8 +72,10 @@ func (s *IncomeService) UpdateIncome(income *models.Income) error {
 		return validator.GetErrors()
 	}
 	
-	// Recalcular valores líquidos
-	s.CalculateNetIncome(income)
+	// Se gross_monthly_cents não foi informado, usar o net_monthly_cents como base
+	if income.GrossMonthlyCents == 0 {
+		income.GrossMonthlyCents = income.NetMonthlyCents
+	}
 	
 	// Usar transação para garantir atomicidade
 	return s.incomeRepo.UpdateWithTransaction(func(repo *repositories.IncomeRepository) error {

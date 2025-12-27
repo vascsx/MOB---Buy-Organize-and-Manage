@@ -92,7 +92,7 @@ export function Dashboard() {
         score={data.financial_health_score}
         expenseRatio={data.income.total_net > 0 ? (data.expenses.total_monthly / data.income.total_net) * 100 : 0}
         hasInvestments={data.investments && data.investments.total_monthly > 0}
-        emergencyProgress={data.emergency_fund_progress?.percentage_complete || 0}
+        emergencyProgress={data.emergency_fund_progress?.completion_percent || 0}
         hasPositiveBalance={data.available_income > 0}
       />
     </div>

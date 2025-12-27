@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -75,8 +75,8 @@ export function Projections() {
               tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              formatter={(value: number, name: string) => [
-                `R$ ${value.toLocaleString()}`,
+              formatter={(value: number | undefined, name: string) => [
+                `R$ ${(value || 0).toLocaleString()}`,
                 name === 'reserve' ? 'Reserva' : 'Investimentos',
               ]}
               contentStyle={{

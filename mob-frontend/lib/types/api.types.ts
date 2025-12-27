@@ -112,8 +112,8 @@ export interface MemberIncome {
 export interface CreateIncomeRequest {
   family_member_id: number;
   type: IncomeType;
-  gross_monthly_cents: number;
-  net_monthly_cents: number;
+  net_monthly_cents: number;  // Campo principal - renda líquida
+  gross_monthly_cents?: number;  // Opcional - renda bruta
   food_voucher_cents?: number;
   transport_voucher_cents?: number;
   bonus_cents?: number;
@@ -194,12 +194,14 @@ export interface ExpenseSplitInput {
 }
 
 // ===== INVESTMENT =====
+export type InvestmentType = 'renda_fixa' | 'renda_variavel' | 'fundos' | 'crypto' | 'imoveis';
+
 export interface Investment {
   id: number;
   family_account_id: number;
   name: string;
-  type: string;
-  current_amount_cents: number;
+  type: InvestmentType;
+  current_balance_cents: number;
   monthly_contribution_cents: number;
   annual_return_rate: number;
   start_date: string;
@@ -209,8 +211,8 @@ export interface Investment {
 }
 
 export interface InvestmentsSummary {
-  total_invested: number;
-  total_monthly: number;
+  total_balance: number;  // Saldo total atual em reais
+  total_monthly: number;  // Aporte mensal total em reais
   by_type: TypeSummary[];
 }
 
@@ -223,7 +225,7 @@ export interface TypeSummary {
 export interface InvestmentProjection {
   investment_id: number;
   investment_name: string;
-  current_amount_cents: number;
+  current_balance_cents: number;
   monthly_contribution_cents: number;
   annual_return_rate: number;
   projection_months: number;
@@ -242,8 +244,8 @@ export interface MonthlyProjection {
 
 export interface CreateInvestmentRequest {
   name: string;
-  type: string;
-  current_amount_cents: number;
+  type: InvestmentType;
+  current_balance_cents: number;
   monthly_contribution_cents: number;
   annual_return_rate: number;
   start_date?: string;
@@ -254,33 +256,37 @@ export interface EmergencyFund {
   id: number;
   family_account_id: number;
   target_months: number;
+  target_amount_cents: number;
   current_amount_cents: number;
-  monthly_contribution_cents: number;
+  monthly_goal_cents: number;
+  estimated_months: number;
   created_at: string;
   updated_at: string;
 }
 
 export interface EmergencyFundProgress {
-  fund?: EmergencyFund;
-  target_amount_cents: number;
-  current_amount_cents: number;
-  percentage_complete: number;
-  months_to_complete: number;
-  estimated_completion_date: string;
-  monthly_expenses_average: number;
+  target_months: number;
+  monthly_expenses: number;  // em reais
+  target_amount: number;  // em reais
+  current_amount: number;  // em reais
+  remaining_amount: number;  // em reais
+  monthly_goal: number;  // em reais
+  estimated_months: number;
+  completion_percent: number;
+  is_complete: boolean;
 }
 
 export interface EmergencyFundSuggestion {
-  suggested_target_months: number;
-  suggested_monthly_contribution_cents: number;
-  available_income_cents: number;
-  suggestion_percentage: number;
+  suggested_amount: number;  // em reais
+  total_income: number;  // em reais
+  total_expenses: number;  // em reais
+  available_income: number;  // em reais
+  percentage_of_income: number;
 }
 
 export interface CreateEmergencyFundRequest {
   target_months: number;
-  current_amount_cents?: number;
-  monthly_contribution_cents?: number;
+  monthly_goal_cents: number;
 }
 
 // ===== DASHBOARD =====
