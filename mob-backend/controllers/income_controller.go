@@ -19,6 +19,8 @@ func NewIncomeController(incomeService *services.IncomeService) *IncomeControlle
 
 // CreateIncome cria uma nova renda
 func (ctrl *IncomeController) CreateIncome(c *gin.Context) {
+	familyID := c.GetUint("family_id")
+	
 	var input struct {
 		FamilyMemberID        uint    `json:"family_member_id" binding:"required"`
 		Type                  string  `json:"type" binding:"required"`
@@ -32,6 +34,12 @@ func (ctrl *IncomeController) CreateIncome(c *gin.Context) {
 	
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, 400, "Dados inválidos")
+		return
+	}
+	
+	// Validar que o membro pertence à família
+	if err := ctrl.incomeService.ValidateMemberBelongsToFamily(input.FamilyMemberID, familyID); err != nil {
+		utils.ErrorResponse(c, 403, "Membro não pertence a esta família")
 		return
 	}
 	

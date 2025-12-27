@@ -22,8 +22,12 @@ func (r *ExpenseRepository) Create(expense *models.Expense) error {
 func (r *ExpenseRepository) GetByID(id uint) (*models.Expense, error) {
 	var expense models.Expense
 	err := r.db.Preload("Category").
-		Preload("Splits").
-		Preload("Splits.FamilyMember").
+		Preload("Splits", func(db *gorm.DB) *gorm.DB {
+			return db.Order("family_member_id")
+		}).
+		Preload("Splits.FamilyMember", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "family_account_id")
+		}).
 		First(&expense, id).Error
 	
 	if err != nil {
@@ -37,7 +41,12 @@ func (r *ExpenseRepository) GetByFamilyID(familyID uint) ([]models.Expense, erro
 	var expenses []models.Expense
 	err := r.db.Where("family_account_id = ? AND is_active = ?", familyID, true).
 		Preload("Category").
-		Preload("Splits").
+		Preload("Splits", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "expense_id", "family_member_id", "percentage", "amount_cents")
+		}).
+		Preload("Splits.FamilyMember", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "family_account_id")
+		}).
 		Order("name").
 		Find(&expenses).Error
 	
@@ -80,16 +89,30 @@ func (r *ExpenseRepository) DeleteSplitsByExpenseID(expenseID uint) error {
 }
 
 // CalculateTotalMonthlyExpenses calcula total de despesas mensais de uma família
+// Inclui despesas mensais + anuais/12
 func (r *ExpenseRepository) CalculateTotalMonthlyExpenses(familyID uint) (int64, error) {
-	var total int64
+	var expenses []models.Expense
 	
-	err := r.db.Model(&models.Expense{}).
-		Select("COALESCE(SUM(amount_cents), 0)").
-		Where("family_account_id = ? AND is_active = ? AND frequency = ?", 
-			familyID, true, "monthly").
-		Scan(&total).Error
+	err := r.db.Where("family_account_id = ? AND is_active = ?", familyID, true).
+		Find(&expenses).Error
 	
-	return total, err
+	if err != nil {
+		return 0, err
+	}
+	
+	var totalMonthly int64
+	for _, expense := range expenses {
+		switch expense.Frequency {
+		case models.ExpenseMonthly:
+			totalMonthly += expense.AmountCents
+		case models.ExpenseYearly:
+			// Converter anual para mensal (dividir por 12)
+			totalMonthly += expense.AmountCents / 12
+		// one_time não entra no cálculo mensal
+		}
+	}
+	
+	return totalMonthly, nil
 }
 
 // GetExpensesByCategory agrupa despesas por categoria
@@ -126,4 +149,12 @@ func (r *ExpenseRepository) GetSplitsByMember(memberID uint) ([]models.ExpenseSp
 		Find(&splits).Error
 	
 	return splits, err
+}
+
+// UpdateWithTransaction atualiza uma despesa dentro de uma transação
+func (r *ExpenseRepository) UpdateWithTransaction(fn func(*ExpenseRepository) error) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		txRepo := &ExpenseRepository{db: tx}
+		return fn(txRepo)
+	})
 }

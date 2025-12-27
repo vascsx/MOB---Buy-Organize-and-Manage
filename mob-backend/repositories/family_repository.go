@@ -86,8 +86,12 @@ func (r *FamilyRepository) UserHasAccess(userID, familyID uint) (bool, error) {
 func (r *FamilyRepository) GetMembers(familyID uint) ([]models.FamilyMember, error) {
 	var members []models.FamilyMember
 	err := r.db.Where("family_account_id = ?", familyID).
-		Preload("User").
-		Preload("Incomes", "is_active = ?", true).
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "email")
+		}).
+		Preload("Incomes", func(db *gorm.DB) *gorm.DB {
+			return db.Where("is_active = ?", true).Select("id", "family_member_id", "type", "gross_monthly_cents", "net_monthly_cents")
+		}).
 		Find(&members).Error
 	
 	return members, err
@@ -118,4 +122,19 @@ func (r *FamilyRepository) GetMemberByID(memberID uint) (*models.FamilyMember, e
 		return nil, err
 	}
 	return &member, nil
+}
+
+// MemberBelongsToFamily verifica se um membro pertence a uma família
+func (r *FamilyRepository) MemberBelongsToFamily(memberID, familyID uint) (bool, error) {
+	var count int64
+	
+	err := r.db.Model(&models.FamilyMember{}).
+		Where("id = ? AND family_account_id = ? AND is_active = ?", memberID, familyID, true).
+		Count(&count).Error
+	
+	if err != nil {
+		return false, err
+	}
+	
+	return count > 0, nil
 }

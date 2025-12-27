@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"strings"
 
@@ -9,9 +8,14 @@ import (
 
 	"finance-backend/config"
 	"finance-backend/routes"
+	"finance-backend/utils/logger"
 )
 
 func main() {
+	// Inicializa logger estruturado
+	logger.InitLogger("mob-finance-backend")
+	log := logger.GetLogger()
+	
 	// Inicializa banco de dados
 	config.InitDB()
 
@@ -23,7 +27,11 @@ func main() {
 	gin.SetMode(ginMode)
 
 	// Cria router
-	r := gin.Default()
+	r := gin.New()
+	
+	// Middlewares de logging e recovery
+	r.Use(logger.GinLogger())
+	r.Use(logger.GinRecovery())
 
 	// Middleware CORS
 	r.Use(corsMiddleware())
@@ -45,11 +53,15 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("🚀 Servidor rodando na porta %s", port)
-	log.Printf("📊 Health check: http://localhost:%s/health", port)
+	log.Info("Servidor iniciado", map[string]interface{}{
+		"port": port,
+		"mode": ginMode,
+	})
 	
 	if err := r.Run(":" + port); err != nil {
-		log.Fatal("Erro ao iniciar servidor:", err)
+		log.Fatal("Erro ao iniciar servidor", map[string]interface{}{
+			"error": err.Error(),
+		})
 	}
 }
 
@@ -58,8 +70,13 @@ func corsMiddleware() gin.HandlerFunc {
 		// Lê origins permitidos do ambiente
 		allowedOrigins := os.Getenv("CORS_ALLOWED_ORIGINS")
 		if allowedOrigins == "" {
-			// Padrão: permite todas as origens (apenas para desenvolvimento)
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+			// Padrão: desenvolvimento local apenas
+			// NUNCA use "*" em produção!
+			if gin.Mode() == gin.ReleaseMode {
+				c.AbortWithStatusJSON(500, gin.H{"error": "CORS_ALLOWED_ORIGINS não configurado"})
+				return
+			}
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		} else {
 			// Verifica se a origin da requisição está na lista
 			origin := c.Request.Header.Get("Origin")

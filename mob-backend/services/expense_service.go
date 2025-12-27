@@ -63,6 +63,17 @@ func (s *ExpenseService) CreateExpense(expense *models.Expense, splits []Expense
 		return errors.New("categoria não encontrada")
 	}
 	
+	// Validar que todos os membros pertencem à mesma família
+	for _, split := range splits {
+		belongs, err := s.familyRepo.MemberBelongsToFamily(split.FamilyMemberID, expense.FamilyAccountID)
+		if err != nil {
+			return err
+		}
+		if !belongs {
+			return errors.New("membro não pertence a esta família")
+		}
+	}
+	
 	// Criar despesa
 	err = s.expenseRepo.Create(expense)
 	if err != nil {
@@ -105,19 +116,33 @@ func (s *ExpenseService) UpdateExpense(expense *models.Expense, splits []Expense
 		return validator.GetErrors()
 	}
 	
-	// Atualizar despesa
-	err := s.expenseRepo.Update(expense)
-	if err != nil {
-		return err
+	// Validar que todos os membros pertencem à mesma família
+	for _, split := range splits {
+		belongs, err := s.familyRepo.MemberBelongsToFamily(split.FamilyMemberID, expense.FamilyAccountID)
+		if err != nil {
+			return err
+		}
+		if !belongs {
+			return errors.New("membro não pertence a esta família")
+		}
 	}
 	
-	// Recriar splits
-	err = s.expenseRepo.DeleteSplitsByExpenseID(expense.ID)
-	if err != nil {
-		return err
-	}
-	
-	return s.createExpenseSplits(expense.ID, expense.AmountCents, splits)
+	// Usar transação para garantir atomicidade
+	return s.expenseRepo.UpdateWithTransaction(func(repo *repositories.ExpenseRepository) error {
+		// Atualizar despesa
+		err := repo.Update(expense)
+		if err != nil {
+			return err
+		}
+		
+		// Recriar splits
+		err = repo.DeleteSplitsByExpenseID(expense.ID)
+		if err != nil {
+			return err
+		}
+		
+		return s.createExpenseSplitsInTx(repo, expense.ID, expense.AmountCents, splits)
+	})
 }
 
 // createExpenseSplits cria as divisões de uma despesa
@@ -134,6 +159,28 @@ func (s *ExpenseService) createExpenseSplits(expenseID uint, totalAmountCents in
 		}
 		
 		err := s.expenseRepo.CreateSplit(expenseSplit)
+		if err != nil {
+			return err
+		}
+	}
+	
+	return nil
+}
+
+// createExpenseSplitsInTx cria splits dentro de uma transação
+func (s *ExpenseService) createExpenseSplitsInTx(repo *repositories.ExpenseRepository, expenseID uint, totalAmountCents int64, splits []ExpenseSplitInput) error {
+	for _, split := range splits {
+		// Calcular valor baseado na porcentagem
+		amountCents := utils.CalculatePercentage(totalAmountCents, split.Percentage)
+		
+		expenseSplit := &models.ExpenseSplit{
+			ExpenseID:      expenseID,
+			FamilyMemberID: split.FamilyMemberID,
+			Percentage:     split.Percentage,
+			AmountCents:    amountCents,
+		}
+		
+		err := repo.CreateSplit(expenseSplit)
 		if err != nil {
 			return err
 		}

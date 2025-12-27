@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -10,11 +9,14 @@ import (
 	"gorm.io/gorm/logger"
 
 	"finance-backend/models"
+	appLogger "finance-backend/utils/logger"
 )
 
 var DB *gorm.DB
 
 func InitDB() {
+	log := appLogger.GetLogger()
+	
 	// Lê variáveis de ambiente
 	dbHost := getEnv("DB_HOST", "localhost")
 	dbUser := getEnv("DB_USER", "mobuser")
@@ -40,10 +42,17 @@ func InitDB() {
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), config)
 	if err != nil {
-		log.Fatal("Erro ao conectar no banco:", err)
+		log.Fatal("Erro ao conectar no banco", map[string]interface{}{
+			"error": err.Error(),
+			"host":  dbHost,
+			"db":    dbName,
+		})
 	}
 
-	log.Println("✅ Conectado ao banco de dados:", dbName)
+	log.Info("Conectado ao banco de dados", map[string]interface{}{
+		"database": dbName,
+		"host":     dbHost,
+	})
 
 	// AutoMigrate dos models
 	err = DB.AutoMigrate(
@@ -59,13 +68,19 @@ func InitDB() {
 		&models.ExpenseSplit{},
 		&models.Investment{},
 		&models.EmergencyFund{},
+		// Tax configuration models
+		&models.INSSBracket{},
+		&models.IRPFBracket{},
+		&models.TaxConfiguration{},
 	)
 	
 	if err != nil {
-		log.Fatal("Erro ao executar migrations:", err)
+		log.Fatal("Erro ao executar migrations", map[string]interface{}{
+			"error": err.Error(),
+		})
 	}
 	
-	log.Println("✅ Migrations executadas com sucesso")
+	log.Info("Migrations executadas com sucesso", nil)
 }
 
 // getEnv retorna o valor da variável de ambiente ou o valor padrão

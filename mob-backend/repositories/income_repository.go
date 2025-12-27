@@ -52,7 +52,10 @@ func (r *IncomeRepository) GetByFamilyID(familyID uint) ([]models.Income, error)
 	var incomes []models.Income
 	err := r.db.Joins("JOIN family_members ON family_members.id = incomes.family_member_id").
 		Where("family_members.family_account_id = ? AND incomes.is_active = ?", familyID, true).
-		Preload("FamilyMember").
+		Preload("FamilyMember", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "family_account_id", "role")
+		}).
+		Select("incomes.*").
 		Find(&incomes).Error
 	
 	return incomes, err
@@ -88,4 +91,20 @@ func (r *IncomeRepository) CalculateTotalFamilyIncome(familyID uint) (int64, err
 		Scan(&total).Error
 	
 	return total, err
+}
+
+// CreateWithTransaction cria uma renda dentro de uma transação
+func (r *IncomeRepository) CreateWithTransaction(fn func(*IncomeRepository) error) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		txRepo := &IncomeRepository{db: tx}
+		return fn(txRepo)
+	})
+}
+
+// UpdateWithTransaction atualiza uma renda dentro de uma transação
+func (r *IncomeRepository) UpdateWithTransaction(fn func(*IncomeRepository) error) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		txRepo := &IncomeRepository{db: tx}
+		return fn(txRepo)
+	})
 }

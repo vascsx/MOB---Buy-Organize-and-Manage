@@ -39,15 +39,19 @@ func (s *IncomeService) CreateIncome(income *models.Income) error {
 	// Calcular valores líquidos
 	s.CalculateNetIncome(income)
 	
-	// Desativar outras rendas do mesmo membro (apenas uma ativa por vez)
-	if income.IsActive {
-		err := s.incomeRepo.DeactivateOtherIncomes(income.FamilyMemberID, 0)
-		if err != nil {
-			return err
+	// Usar transação para garantir atomicidade
+	return s.incomeRepo.CreateWithTransaction(func(repo *repositories.IncomeRepository) error {
+		// Desativar outras rendas do mesmo membro (apenas uma ativa por vez)
+		if income.IsActive {
+			err := repo.DeactivateOtherIncomes(income.FamilyMemberID, 0)
+			if err != nil {
+				return err
+			}
 		}
-	}
-	
-	return s.incomeRepo.Create(income)
+		
+		// Criar nova renda
+		return repo.Create(income)
+	})
 }
 
 // UpdateIncome atualiza uma renda e recalcula valores
@@ -69,15 +73,19 @@ func (s *IncomeService) UpdateIncome(income *models.Income) error {
 	// Recalcular valores líquidos
 	s.CalculateNetIncome(income)
 	
-	// Se está ativando esta renda, desativar outras
-	if income.IsActive {
-		err := s.incomeRepo.DeactivateOtherIncomes(income.FamilyMemberID, income.ID)
-		if err != nil {
-			return err
+	// Usar transação para garantir atomicidade
+	return s.incomeRepo.UpdateWithTransaction(func(repo *repositories.IncomeRepository) error {
+		// Se está ativando esta renda, desativar outras
+		if income.IsActive {
+			err := repo.DeactivateOtherIncomes(income.FamilyMemberID, income.ID)
+			if err != nil {
+				return err
+			}
 		}
-	}
-	
-	return s.incomeRepo.Update(income)
+		
+		// Atualizar renda
+		return repo.Update(income)
+	})
 }
 
 // CalculateNetIncome calcula o valor líquido baseado no tipo de renda
@@ -248,6 +256,20 @@ func (s *IncomeService) ValidateMemberAccess(memberID, familyID uint) error {
 	}
 	
 	if member.FamilyAccountID != familyID {
+		return errors.New("membro não pertence a esta família")
+	}
+	
+	return nil
+}
+
+// ValidateMemberBelongsToFamily valida usando repositório otimizado
+func (s *IncomeService) ValidateMemberBelongsToFamily(memberID, familyID uint) error {
+	belongs, err := s.familyRepo.MemberBelongsToFamily(memberID, familyID)
+	if err != nil {
+		return err
+	}
+	
+	if !belongs {
 		return errors.New("membro não pertence a esta família")
 	}
 	
