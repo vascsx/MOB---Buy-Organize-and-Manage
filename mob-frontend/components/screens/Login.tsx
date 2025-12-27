@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { useAuth } from '../../hooks/useAuth';
 
 interface LoginProps {
   onLogin: () => void;
@@ -10,26 +11,21 @@ interface LoginProps {
 }
 
 export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { login, isLoading, error, clearError } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
+    clearError();
 
-    // Simulação de login
-    setTimeout(() => {
-      if (email && password) {
-        onLogin();
-      } else {
-        setError('Email ou senha incorretos. Tente novamente.');
-        setIsLoading(false);
-      }
-    }, 1500);
+    try {
+      await login({ email: username, password });
+      onLogin();
+    } catch (err) {
+      // Erro já foi tratado pelo hook
+    }
   };
 
   return (
@@ -61,15 +57,15 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
           {/* Formulário */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <Label htmlFor="email" className="text-gray-700 mb-2 block">
-                Seu email
+              <Label htmlFor="username" className="text-gray-700 mb-2 block">
+                Nome de usuário
               </Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="seu_usuario"
                 className="h-12 text-base"
                 disabled={isLoading}
                 required

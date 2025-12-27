@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Dashboard } from './components/screens/Dashboard';
 import { IndividualProfile } from './components/screens/IndividualProfile';
 import { Expenses } from './components/screens/Expenses';

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useFamilies, useDashboard } from '../../hooks';
 import { formatMoney } from '../../lib/utils/money';
 import { Card } from '../ui/card';

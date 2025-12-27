@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
@@ -146,8 +146,8 @@ export function EmergencyFund() {
               stroke="#6B7280"
               tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
             />
-            <Tooltip
-              formatter={(value: number) => [`R$ ${value.toLocaleString()}`, 'Reserva']}
+              <Tooltip
+                formatter={(value: number | undefined) => [`R$ ${value?.toLocaleString() ?? '0'}`, 'Reserva']}
               contentStyle={{
                 backgroundColor: 'white',
                 border: '1px solid #E5E7EB',

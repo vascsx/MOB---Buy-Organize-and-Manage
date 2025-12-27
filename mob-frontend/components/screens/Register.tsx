@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, TrendingUp, Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { useAuth } from '../../hooks/useAuth';
 
 interface RegisterProps {
   onRegister: () => void;
@@ -12,15 +13,15 @@ interface RegisterProps {
 type PasswordStrength = 'weak' | 'medium' | 'strong';
 
 export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
   const [passwordsMatch, setPasswordsMatch] = useState(false);
+  const { register, isLoading, error, clearError } = useAuth();
 
   // Calcular força da senha
   useEffect(() => {
@@ -84,12 +85,14 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
     
     if (!passwordsMatch) return;
     
-    setIsLoading(true);
+    clearError();
 
-    // Simulação de registro
-    setTimeout(() => {
+    try {
+      await register({ name: username, email, password });
       onRegister();
-    }, 1500);
+    } catch (err) {
+      // Erro já foi tratado pelo hook
+    }
   };
 
   return (
@@ -110,18 +113,26 @@ export function Register({ onRegister, onSwitchToLogin }: RegisterProps) {
             <p className="text-gray-600">Leva menos de 1 minuto</p>
           </div>
 
+          {/* Mensagem de Erro */}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+              <span className="text-red-600 text-sm">⚠️</span>
+              <p className="text-sm text-red-700 flex-1">{error}</p>
+            </div>
+          )}
+
           {/* Formulário */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <Label htmlFor="name" className="text-gray-700 mb-2 block">
-                Nome completo
+              <Label htmlFor="username" className="text-gray-700 mb-2 block">
+                Nome de usuário
               </Label>
               <Input
-                id="name"
+                id="username"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: João Silva"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Ex: joaosilva"
                 className="h-12 text-base"
                 disabled={isLoading}
                 required
