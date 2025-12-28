@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -6,19 +6,21 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useFamilyContext } from '../contexts/FamilyContext';
 import { useInvestments } from '../hooks/useInvestments';
-import type { CreateInvestmentRequest } from '../lib/types/api.types';
+import type { CreateInvestmentRequest, Investment } from '../lib/types/api.types';
 
 interface AddInvestmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  investment?: Investment; // Optional for edit mode
 }
 
-export function AddInvestmentModal({ isOpen, onClose, onSuccess }: AddInvestmentModalProps) {
+export function AddInvestmentModal({ isOpen, onClose, onSuccess, investment }: AddInvestmentModalProps) {
   const { family } = useFamilyContext();
-  const { createInvestment } = useInvestments();
+  const { createInvestment, updateInvestment } = useInvestments();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const isEditMode = !!investment;
 
   const [formData, setFormData] = useState<CreateInvestmentRequest>({
     name: '',
@@ -27,6 +29,28 @@ export function AddInvestmentModal({ isOpen, onClose, onSuccess }: AddInvestment
     monthly_contribution_cents: 0,
     annual_return_rate: 0,
   });
+
+  // Populate form when editing
+  useEffect(() => {
+    if (investment) {
+      setFormData({
+        name: investment.name,
+        type: investment.type,
+        current_balance_cents: investment.current_balance_cents,
+        monthly_contribution_cents: investment.monthly_contribution_cents,
+        annual_return_rate: investment.annual_return_rate,
+      });
+    } else {
+      // Reset form when not editing
+      setFormData({
+        name: '',
+        type: 'renda_fixa',
+        current_balance_cents: 0,
+        monthly_contribution_cents: 0,
+        annual_return_rate: 0,
+      });
+    }
+  }, [investment]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,20 +75,28 @@ export function AddInvestmentModal({ isOpen, onClose, onSuccess }: AddInvestment
     try {
       setIsLoading(true);
       setError('');
-      await createInvestment(family.id, formData);
-      // Resetar form
-      setFormData({
-        name: '',
-        type: 'renda_fixa',
-        current_balance_cents: 0,
-        monthly_contribution_cents: 0,
-        annual_return_rate: 0,
-      });
+      
+      if (isEditMode && investment) {
+        await updateInvestment(family.id, investment.id, formData);
+      } else {
+        await createInvestment(family.id, formData);
+      }
+      
+      // Resetar form apenas se não for modo de edição
+      if (!isEditMode) {
+        setFormData({
+          name: '',
+          type: 'renda_fixa',
+          current_balance_cents: 0,
+          monthly_contribution_cents: 0,
+          annual_return_rate: 0,
+        });
+      }
       onSuccess();
     } catch (err: any) {
-      const errorMsg = err.response?.data?.message || err.message || 'Erro ao criar investimento';
+      const errorMsg = err.response?.data?.message || err.message || `Erro ao ${isEditMode ? 'atualizar' : 'criar'} investimento`;
       setError(errorMsg);
-      console.error('Erro ao criar investimento:', err.response?.data || err);
+      console.error(`Erro ao ${isEditMode ? 'atualizar' : 'criar'} investimento:`, err.response?.data || err);
     } finally {
       setIsLoading(false);
     }
@@ -101,7 +133,9 @@ export function AddInvestmentModal({ isOpen, onClose, onSuccess }: AddInvestment
       <div className="relative bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Novo Investimento</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {isEditMode ? 'Editar Investimento' : 'Novo Investimento'}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -221,7 +255,7 @@ export function AddInvestmentModal({ isOpen, onClose, onSuccess }: AddInvestment
               className="flex-1 bg-[#3B82F6] hover:bg-[#2563EB] text-white"
               disabled={isLoading}
             >
-              {isLoading ? 'Salvando...' : 'Adicionar'}
+              {isLoading ? 'Salvando...' : (isEditMode ? 'Atualizar' : 'Adicionar')}
             </Button>
           </div>
         </form>

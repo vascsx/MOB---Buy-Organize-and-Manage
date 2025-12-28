@@ -52,6 +52,8 @@ export function Expenses() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingExpense, setDeletingExpense] = useState<any>(null);
   
   // Form state
   const [formData, setFormData] = useState<{
@@ -198,19 +200,25 @@ export function Expenses() {
     }
   };
 
-  const handleDeleteExpense = async (id: number) => {
-    if (!family) return;
+  const handleDeleteExpense = async (expense: any) => {
+    setDeletingExpense(expense);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteExpense = async () => {
+    if (!family || !deletingExpense) return;
     
-    if (confirm('Tem certeza que deseja excluir esta despesa?')) {
-      try {
-        await deleteExpense(family.id, id);
-        fetchExpenses(family.id, selectedMonth);
-        fetchSummary(family.id, selectedMonth);
-        fetchCategoryBreakdown(family.id, selectedMonth);
-      } catch (err) {
-        console.error('Failed to delete expense:', err);
-        toast.error('Erro ao excluir despesa', { description: 'Não foi possível excluir a despesa' });
-      }
+    try {
+      await deleteExpense(family.id, deletingExpense.id);
+      fetchExpenses(family.id, selectedMonth);
+      fetchSummary(family.id, selectedMonth);
+      fetchCategoryBreakdown(family.id, selectedMonth);
+      setShowDeleteConfirm(false);
+      setDeletingExpense(null);
+      toast.success('Sucesso!', { description: 'Despesa excluída com sucesso' });
+    } catch (err) {
+      console.error('Failed to delete expense:', err);
+      toast.error('Erro ao excluir despesa', { description: 'Não foi possível excluir a despesa' });
     }
   };
 
@@ -564,7 +572,7 @@ export function Expenses() {
                       </button>
                       <button 
                         className="p-2 hover:bg-red-50 rounded-lg"
-                        onClick={() => handleDeleteExpense(expense.id)}
+                        onClick={() => handleDeleteExpense(expense)}
                       >
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </button>
@@ -592,6 +600,42 @@ export function Expenses() {
           )}
         </div>
       </div>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-gray-700">
+              Tem certeza que deseja excluir a despesa{' '}
+              <span className="font-semibold">"{deletingExpense?.name}"</span>?
+            </p>
+            <p className="text-sm text-gray-500">
+              Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingExpense(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteExpense}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
     </ErrorBoundary>
   );

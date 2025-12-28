@@ -19,12 +19,16 @@ export function FinancialHealth({
 }: FinancialHealthProps) {
   const getStatusLabel = (score: number) => {
     if (score >= 80) return { text: 'Excelente', color: '#10B981' };
-    if (score >= 60) return { text: 'Bom', color: '#10B981' };
+    if (score >= 65) return { text: 'Bom', color: '#10B981' };
     if (score >= 40) return { text: 'Regular', color: '#F59E0B' };
     return { text: 'Precisa melhorar', color: '#EF4444' };
   };
 
   const status = getStatusLabel(score);
+  
+  // Calculate proportional points based on actual score
+  const totalMaxPoints = 100;
+  const scoreRatio = score / totalMaxPoints;
   
   // Critérios baseados na lógica do backend (total: 100 pontos)
   const indicators = [
@@ -32,25 +36,29 @@ export function FinancialHealth({
       label: 'Despesas controladas', 
       status: expenseRatio < 50 ? 'good' : expenseRatio < 70 ? 'warning' : 'bad',
       detail: expenseRatio > 0 ? `${expenseRatio.toFixed(0)}% da renda` : 'Sem gastos registrados',
-      points: 30
+      maxPoints: 30,
+      actualPoints: Math.round(30 * scoreRatio * (expenseRatio === 0 || expenseRatio < 50 ? 1 : expenseRatio < 70 ? 0.5 : 0))
     },
     { 
       label: 'Possui investimentos', 
       status: hasInvestments ? 'good' : 'bad',
       detail: hasInvestments ? 'Investindo mensalmente' : 'Sem investimentos',
-      points: 25
+      maxPoints: 25,
+      actualPoints: Math.round(25 * scoreRatio * (hasInvestments ? 1 : 0))
     },
     { 
       label: 'Reserva de emergência', 
       status: emergencyProgress >= 100 ? 'good' : emergencyProgress >= 50 ? 'warning' : 'bad',
       detail: emergencyProgress > 0 ? `${emergencyProgress.toFixed(0)}% concluída` : 'Não configurada',
-      points: 25
+      maxPoints: 25,
+      actualPoints: Math.round(25 * scoreRatio * (emergencyProgress / 100))
     },
     { 
       label: 'Saldo positivo', 
       status: hasPositiveBalance ? 'good' : 'bad',
       detail: hasPositiveBalance ? 'Sobra dinheiro' : 'Gastos igualam renda',
-      points: 20
+      maxPoints: 20,
+      actualPoints: Math.round(20 * scoreRatio * (hasPositiveBalance ? 1 : 0))
     },
   ];
 
@@ -96,7 +104,9 @@ export function FinancialHealth({
             <div className="flex-1">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-700">{indicator.label}</p>
-                <span className="text-xs text-gray-500">{indicator.points} pts</span>
+                <span className="text-xs text-gray-500">
+                  {indicator.actualPoints}/{indicator.maxPoints} pts
+                </span>
               </div>
               <p className="text-xs text-gray-500 mt-0.5">{indicator.detail}</p>
             </div>

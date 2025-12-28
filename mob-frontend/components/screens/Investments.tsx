@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useInvestments } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { useMonth } from '../../contexts/MonthContext';
 import { formatMoney } from '../../lib/utils/money';
 import { getInvestmentTypeIcon, getInvestmentTypeName } from '../../lib/utils/investment';
+import { useToast } from '../../hooks/useToast';
 import { AddInvestmentModal } from '../AddInvestmentModal';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 
@@ -25,10 +27,18 @@ export function Investments() {
     fetchSummary,
     fetchProjections,
     createInvestment,
+    updateInvestment,
+    deleteInvestment,
   } = useInvestments();
+
+  const { toast } = useToast();
 
   const [selectedTab, setSelectedTab] = useState('60'); // 5 anos em meses
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingInvestment, setEditingInvestment] = useState<any>(null);
+  const [deletingInvestment, setDeletingInvestment] = useState<any>(null);
 
   useEffect(() => {
     if (family) {
@@ -43,6 +53,33 @@ export function Investments() {
       fetchProjections(family.id, parseInt(selectedTab));
     }
   }, [selectedTab, family]);
+
+  const handleEditInvestment = (investment: any) => {
+    setEditingInvestment(investment);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteInvestment = (investment: any) => {
+    setDeletingInvestment(investment);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteInvestment = async () => {
+    if (!family || !deletingInvestment) return;
+    
+    try {
+      await deleteInvestment(family.id, deletingInvestment.id);
+      await fetchInvestments(family.id, selectedMonth);
+      await fetchSummary(family.id, selectedMonth);
+      await fetchProjections(family.id, parseInt(selectedTab));
+      setShowDeleteConfirm(false);
+      setDeletingInvestment(null);
+      toast.success('Sucesso!', { description: 'Investimento excluído com sucesso' });
+    } catch (err) {
+      console.error('Failed to delete investment:', err);
+      toast.error('Erro ao excluir investimento', { description: 'Não foi possível excluir o investimento' });
+    }
+  };
 
   if (!family) {
     return (
@@ -198,7 +235,7 @@ export function Investments() {
             {investments.map((investment) => (
               <div
                 key={investment.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
               >
                 <div className="flex items-center gap-4">
                   <span className="text-3xl">
@@ -215,6 +252,20 @@ export function Investments() {
                   <div className="text-right">
                     <p className="text-xl font-bold">{formatMoney(investment.current_balance_cents)}</p>
                     <p className="text-sm text-gray-500">Aporte mensal: {formatMoney(investment.monthly_contribution_cents)}</p>
+                  </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      className="p-2 hover:bg-gray-200 rounded-lg"
+                      onClick={() => handleEditInvestment(investment)}
+                    >
+                      <Edit2 className="w-4 h-4 text-gray-600" />
+                    </button>
+                    <button 
+                      className="p-2 hover:bg-red-50 rounded-lg"
+                      onClick={() => handleDeleteInvestment(investment)}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -240,6 +291,63 @@ export function Investments() {
           }}
         />
       )}
+
+      {/* Modal de Editar Investimento */}
+      {showEditModal && editingInvestment && (
+        <AddInvestmentModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingInvestment(null);
+          }}
+          investment={editingInvestment}
+          onSuccess={async () => {
+            setShowEditModal(false);
+            setEditingInvestment(null);
+            if (family) {
+              await fetchInvestments(family.id, selectedMonth);
+              await fetchSummary(family.id, selectedMonth);
+              await fetchProjections(family.id, parseInt(selectedTab));
+            }
+          }}
+        />
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-gray-700">
+              Tem certeza que deseja excluir o investimento{' '}
+              <span className="font-semibold">"{deletingInvestment?.name}"</span>?
+            </p>
+            <p className="text-sm text-gray-500">
+              Esta ação não pode ser desfeita e todos os dados do investimento serão perdidos.
+            </p>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletingInvestment(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteInvestment}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       </div>
     </ErrorBoundary>
   );
