@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { incomesApi } from '../lib/api/incomes.api';
 import { getErrorMessage } from '../lib/api/client';
+import { useToast } from './useToast';
 import type {
   Income,
   IncomeSummary,
@@ -37,6 +38,7 @@ export const useIncomes = (): UseIncomesReturn => {
   const [breakdown, setBreakdown] = useState<IncomeBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchIncomes = useCallback(async (familyId: number) => {
     try {
@@ -45,7 +47,9 @@ export const useIncomes = (): UseIncomesReturn => {
       const data = await incomesApi.getFamilyIncomes(familyId);
       setIncomes(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar rendas', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +62,9 @@ export const useIncomes = (): UseIncomesReturn => {
       const data = await incomesApi.getIncomeSummary(familyId);
       setSummary(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar resumo', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +77,9 @@ export const useIncomes = (): UseIncomesReturn => {
       const data = await incomesApi.getIncome(familyId, incomeId);
       setSelectedIncome(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar renda', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +92,9 @@ export const useIncomes = (): UseIncomesReturn => {
       const data = await incomesApi.getIncomeBreakdown(familyId, incomeId);
       setBreakdown(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar detalhamento', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +108,9 @@ export const useIncomes = (): UseIncomesReturn => {
       setIncomes((prev) => [...prev, newIncome]);
       return newIncome;
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao criar renda', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -116,7 +128,9 @@ export const useIncomes = (): UseIncomesReturn => {
           setSelectedIncome(updated);
         }
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao atualizar renda', { description: message });
         throw err;
       } finally {
         setIsLoading(false);
@@ -136,7 +150,9 @@ export const useIncomes = (): UseIncomesReturn => {
         setBreakdown(null);
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao excluir renda', { description: message });
       throw err;
     } finally {
       setIsLoading(false);

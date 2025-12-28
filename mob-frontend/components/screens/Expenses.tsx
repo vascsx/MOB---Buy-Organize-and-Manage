@@ -12,6 +12,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 import { useExpenses } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
+import { useToast } from '../../hooks/useToast';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
 
 // Static categories matching backend expectations
@@ -42,6 +43,7 @@ export function Expenses() {
     updateExpense,
     deleteExpense,
   } = useExpenses();
+  const { toast } = useToast();
 
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -156,6 +158,7 @@ export function Expenses() {
       fetchCategoryBreakdown(family.id);
     } catch (err) {
       console.error('Failed to save expense:', err);
+      toast.error('Erro ao salvar despesa', { description: 'Não foi possível salvar a despesa' });
     }
   };
 
@@ -170,6 +173,7 @@ export function Expenses() {
         fetchCategoryBreakdown(family.id);
       } catch (err) {
         console.error('Failed to delete expense:', err);
+        toast.error('Erro ao excluir despesa', { description: 'Não foi possível excluir a despesa' });
       }
     }
   };

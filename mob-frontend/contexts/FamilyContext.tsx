@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { familiesApi } from '../lib/api/families.api';
 import { getErrorMessage } from '../lib/api/client';
+import { useToast } from '../hooks/useToast';
 import type {
   FamilyAccount,
   FamilyMember,
@@ -31,6 +32,7 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Buscar família única da conta
   const fetchFamily = useCallback(async () => {
@@ -53,7 +55,9 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         localStorage.removeItem('family_id');
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar família', { description: message });
       setFamily(null);
     } finally {
       setIsLoading(false);
@@ -70,7 +74,9 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       localStorage.setItem('family_id', String(newFamily.id));
       return newFamily;
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao criar família', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -86,7 +92,9 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const updated = await familiesApi.updateFamily(family.id, data);
       setFamily(updated);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao atualizar família', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -102,7 +110,9 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const data = await familiesApi.getMembers(family.id);
       setMembers(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar membros', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +127,9 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const newMember = await familiesApi.addMember(family.id, data);
       setMembers((prev) => [...prev, newMember]);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao adicionar membro', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -134,7 +146,9 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         const updated = await familiesApi.updateMember(family.id, memberId, data);
         setMembers((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao atualizar membro', { description: message });
         throw err;
       } finally {
         setIsLoading(false);
@@ -152,7 +166,9 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       await familiesApi.removeMember(family.id, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao remover membro', { description: message });
       throw err;
     } finally {
       setIsLoading(false);

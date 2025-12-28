@@ -7,6 +7,7 @@ import { useState, useCallback } from 'react';
 import { dashboardApi } from '../lib/api/dashboard.api';
 import { getErrorMessage } from '../lib/api/client';
 import type { DashboardData } from '../lib/types/api.types';
+import { useToast } from './useToast';
 
 interface UseDashboardReturn {
   data: DashboardData | null;
@@ -21,6 +22,7 @@ export const useDashboard = (): UseDashboardReturn => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchDashboard = useCallback(async (familyId: number) => {
     try {
@@ -29,7 +31,9 @@ export const useDashboard = (): UseDashboardReturn => {
       const dashboardData = await dashboardApi.getDashboard(familyId);
       setData(dashboardData);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar dashboard', { description: message });
     } finally {
       setIsLoading(false);
     }

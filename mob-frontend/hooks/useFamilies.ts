@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { familiesApi } from '../lib/api/families.api';
 import { getErrorMessage } from '../lib/api/client';
+import { useToast } from './useToast';
 import type {
   FamilyAccount,
   FamilyMember,
@@ -37,6 +38,7 @@ export const useFamilies = (): UseFamiliesReturn => {
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Buscar minhas famílias
   const fetchMyFamilies = useCallback(async () => {
@@ -60,7 +62,9 @@ export const useFamilies = (): UseFamiliesReturn => {
         localStorage.removeItem('current_family_id');
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar famílias', { description: message });
       // Em caso de erro, garantir que families seja um array vazio
       setFamilies([]);
     } finally {
@@ -77,7 +81,9 @@ export const useFamilies = (): UseFamiliesReturn => {
       setCurrentFamily(family);
       localStorage.setItem('current_family_id', String(familyId));
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao selecionar família', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +100,9 @@ export const useFamilies = (): UseFamiliesReturn => {
       localStorage.setItem('current_family_id', String(newFamily.id));
       return newFamily;
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao criar família', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -112,7 +120,9 @@ export const useFamilies = (): UseFamiliesReturn => {
         setCurrentFamily(updated);
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao atualizar família', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -131,7 +141,9 @@ export const useFamilies = (): UseFamiliesReturn => {
         localStorage.removeItem('current_family_id');
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao excluir família', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -146,7 +158,9 @@ export const useFamilies = (): UseFamiliesReturn => {
       const data = await familiesApi.getMembers(familyId);
       setMembers(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar membros', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +174,9 @@ export const useFamilies = (): UseFamiliesReturn => {
       const newMember = await familiesApi.addMember(familyId, data);
       setMembers((prev) => [...prev, newMember]);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao adicionar membro', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -176,7 +192,9 @@ export const useFamilies = (): UseFamiliesReturn => {
         const updated = await familiesApi.updateMember(familyId, memberId, data);
         setMembers((prev) => prev.map((m) => (m.id === memberId ? updated : m)));
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao atualizar membro', { description: message });
         throw err;
       } finally {
         setIsLoading(false);
@@ -193,7 +211,9 @@ export const useFamilies = (): UseFamiliesReturn => {
       await familiesApi.removeMember(familyId, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao remover membro', { description: message });
       throw err;
     } finally {
       setIsLoading(false);

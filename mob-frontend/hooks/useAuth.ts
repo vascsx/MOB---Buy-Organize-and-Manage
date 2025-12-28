@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { authApi } from '../lib/api/auth.api';
 import { storage, getErrorMessage } from '../lib/api/client';
 import type { User, LoginRequest, RegisterRequest } from '../lib/types/api.types';
+import { useToast } from './useToast';
 
 interface UseAuthReturn {
   user: User | null;
@@ -25,6 +26,7 @@ export const useAuth = (): UseAuthReturn => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Carregar usuário do localStorage ao montar
   useEffect(() => {
@@ -52,6 +54,7 @@ export const useAuth = (): UseAuthReturn => {
     } catch (err) {
       const message = getErrorMessage(err);
       setError(message);
+      toast.error('Erro ao fazer login', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -73,6 +76,7 @@ export const useAuth = (): UseAuthReturn => {
     } catch (err) {
       const message = getErrorMessage(err);
       setError(message);
+      toast.error('Erro ao registrar', { description: message });
       throw err;
     } finally {
       setIsLoading(false);

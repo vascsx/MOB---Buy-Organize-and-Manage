@@ -9,13 +9,13 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { useEmergencyFund } from '../../hooks/useEmergencyFund';
+import { useToast } from '../../hooks/useToast';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2 } from 'lucide-react';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function EmergencyFund() {
-  const { family } = useFamilyContext();
   const { 
     progress, 
     suggestion, 
@@ -28,6 +28,8 @@ export function EmergencyFund() {
     projection,
     fetchProjection
   } = useEmergencyFund();
+  const { family } = useFamilyContext();
+  const { toast } = useToast();
 
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isAddAmountModalOpen, setIsAddAmountModalOpen] = useState(false);
@@ -73,6 +75,7 @@ export function EmergencyFund() {
       setIsAddAmountModalOpen(false);
     } catch (err) {
       console.error('Erro ao adicionar valor:', err);
+      toast.error('Erro ao adicionar valor', { description: 'Não foi possível adicionar o valor à reserva' });
     }
   };
 
@@ -88,6 +91,7 @@ export function EmergencyFund() {
       await fetchProgress(family.id);
     } catch (err) {
       console.error('Erro ao salvar meta:', err);
+      toast.error('Erro ao salvar meta', { description: 'Não foi possível salvar a meta de reserva' });
     }
   };
 
@@ -102,6 +106,7 @@ export function EmergencyFund() {
       await fetchProgress(family.id);
     } catch (err) {
       console.error('Erro ao aplicar sugestão:', err);
+      toast.error('Erro ao aplicar sugestão', { description: 'Não foi possível aplicar a sugestão' });
     }
   };
 

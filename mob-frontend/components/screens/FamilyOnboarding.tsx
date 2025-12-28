@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Card } from '../ui/card';
+import { useToast } from '../../hooks/useToast';
 
 interface FamilyOnboardingProps {
   onCreateFamily: (name: string) => Promise<void>;
@@ -13,6 +14,7 @@ interface FamilyOnboardingProps {
 export function FamilyOnboarding({ onCreateFamily, isLoading }: FamilyOnboardingProps) {
   const [familyName, setFamilyName] = useState('');
   const [error, setError] = useState('');
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +29,7 @@ export function FamilyOnboarding({ onCreateFamily, isLoading }: FamilyOnboarding
       await onCreateFamily(familyName.trim());
     } catch (err) {
       setError('Erro ao criar família. Tente novamente.');
+      toast.error('Erro ao criar família', { description: 'Não foi possível criar a família' });
     }
   };
 

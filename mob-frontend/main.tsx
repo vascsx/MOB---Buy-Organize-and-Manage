@@ -6,6 +6,7 @@ import App from './App';
 import { Login } from './components/screens/Login';
 import { Register } from './components/screens/Register';
 import { FamilyProvider } from './contexts/FamilyContext';
+import { Toaster } from './components/ui/sonner';
 
 function LoginWrapper() {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>
       <FamilyProvider>
+        <Toaster position="top-right" />
         <Routes>
           <Route path="/login" element={<LoginWrapper />} />
           <Route path="/register" element={<RegisterWrapper />} />

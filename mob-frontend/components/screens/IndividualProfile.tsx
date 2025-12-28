@@ -7,6 +7,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
 import { useIncomes } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
+import { useToast } from '../../hooks/useToast';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
 import type { Income, IncomeBreakdown } from '../../lib/types/api.types';
 import { AddIncomeModal } from '../AddIncomeModal';
@@ -21,6 +22,7 @@ interface IndividualProfileProps {
 export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) {
   const { family, members, fetchMembers } = useFamilyContext();
   const { incomes, breakdown, fetchIncomes, fetchBreakdown, createIncome, deleteIncome, isLoading, error } = useIncomes();
+  const { toast } = useToast();
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -168,6 +170,7 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
       }
     } catch (err) {
       console.error('Erro ao excluir renda:', err);
+      toast.error('Erro ao excluir renda', { description: 'Não foi possível excluir a renda' });
     }
   };
 

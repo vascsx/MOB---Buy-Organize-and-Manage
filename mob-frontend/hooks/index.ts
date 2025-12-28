@@ -9,3 +9,4 @@ export { useExpenses } from './useExpenses';
 export { useInvestments } from './useInvestments';
 export { useEmergencyFund } from './useEmergencyFund';
 export { useDashboard } from './useDashboard';
+export { useToast } from './useToast';

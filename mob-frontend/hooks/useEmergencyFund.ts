@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { emergencyFundApi } from '../lib/api/emergency-fund.api';
 import { getErrorMessage } from '../lib/api/client';
+import { useToast } from './useToast';
 import type {
   EmergencyFund,
   EmergencyFundProgress,
@@ -38,6 +39,7 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
   const [projection, setProjection] = useState<EmergencyFundProjection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchFund = useCallback(async (familyId: number) => {
     try {
@@ -46,7 +48,9 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
       const data = await emergencyFundApi.getEmergencyFund(familyId);
       setFund(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar fundo de emergência', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +63,9 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
       const data = await emergencyFundApi.getProgress(familyId);
       setProgress(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar progresso', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +78,9 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
       const data = await emergencyFundApi.getSuggestion(familyId);
       setSuggestion(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar sugestão', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +93,9 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
       const data = await emergencyFundApi.getProjection(familyId, months);
       setProjection(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar projeção', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +110,9 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
         setFund(result);
         return result;
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao salvar fundo de emergência', { description: message });
         throw err;
       } finally {
         setIsLoading(false);
@@ -118,7 +130,9 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
         // Atualizar progresso após a mudança
         await fetchProgress(familyId);
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao atualizar valor', { description: message });
         throw err;
       } finally {
         setIsLoading(false);

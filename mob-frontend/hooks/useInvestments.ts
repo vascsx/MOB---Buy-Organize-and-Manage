@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { investmentsApi } from '../lib/api/investments.api';
 import { getErrorMessage } from '../lib/api/client';
+import { useToast } from './useToast';
 import type {
   Investment,
   InvestmentsSummary,
@@ -40,6 +41,7 @@ export const useInvestments = (): UseInvestmentsReturn => {
   const [selectedProjection, setSelectedProjection] = useState<InvestmentProjection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchInvestments = useCallback(async (familyId: number) => {
     try {
@@ -48,7 +50,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
       const data = await investmentsApi.getFamilyInvestments(familyId);
       setInvestments(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar investimentos', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +65,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
       const data = await investmentsApi.getInvestmentsSummary(familyId);
       setSummary(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar resumo', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +80,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
       const data = await investmentsApi.getFamilyInvestmentsProjection(familyId, months);
       setProjections(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar projeções', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +95,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
       const data = await investmentsApi.getInvestment(familyId, investmentId);
       setSelectedInvestment(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar investimento', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -101,7 +111,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
         const data = await investmentsApi.getInvestmentProjection(familyId, investmentId, months);
         setSelectedProjection(data);
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao carregar projeção do investimento', { description: message });
       } finally {
         setIsLoading(false);
       }
@@ -118,7 +130,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
         setInvestments((prev) => [...prev, newInvestment]);
         return newInvestment;
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao criar investimento', { description: message });
         throw err;
       } finally {
         setIsLoading(false);
@@ -138,7 +152,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
           setSelectedInvestment(updated);
         }
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao atualizar investimento', { description: message });
         throw err;
       } finally {
         setIsLoading(false);
@@ -159,7 +175,9 @@ export const useInvestments = (): UseInvestmentsReturn => {
           setSelectedProjection(null);
         }
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao excluir investimento', { description: message });
         throw err;
       } finally {
         setIsLoading(false);

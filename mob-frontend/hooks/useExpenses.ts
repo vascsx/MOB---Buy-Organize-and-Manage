@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { expensesApi } from '../lib/api/expenses.api';
 import { getErrorMessage } from '../lib/api/client';
+import { useToast } from './useToast';
 import type {
   Expense,
   ExpenseCategory,
@@ -42,6 +43,7 @@ export const useExpenses = (): UseExpensesReturn => {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const fetchCategories = useCallback(async (familyId: number) => {
     try {
@@ -50,7 +52,9 @@ export const useExpenses = (): UseExpensesReturn => {
       const data = await expensesApi.getCategories(familyId);
       setCategories(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar categorias', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +67,9 @@ export const useExpenses = (): UseExpensesReturn => {
       const data = await expensesApi.getFamilyExpenses(familyId, filters);
       setExpenses(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar despesas', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +82,9 @@ export const useExpenses = (): UseExpensesReturn => {
       const data = await expensesApi.getExpensesSummary(familyId);
       setSummary(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar resumo', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +97,9 @@ export const useExpenses = (): UseExpensesReturn => {
       const data = await expensesApi.getExpensesByCategory(familyId);
       setCategoryBreakdown(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar distribuição', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +112,9 @@ export const useExpenses = (): UseExpensesReturn => {
       const data = await expensesApi.getExpense(familyId, expenseId);
       setSelectedExpense(data);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao carregar despesa', { description: message });
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +128,9 @@ export const useExpenses = (): UseExpensesReturn => {
       setExpenses((prev) => [...prev, newExpense]);
       return newExpense;
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao criar despesa', { description: message });
       throw err;
     } finally {
       setIsLoading(false);
@@ -134,7 +148,9 @@ export const useExpenses = (): UseExpensesReturn => {
           setSelectedExpense(updated);
         }
       } catch (err) {
-        setError(getErrorMessage(err));
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao atualizar despesa', { description: message });
         throw err;
       } finally {
         setIsLoading(false);
@@ -153,7 +169,9 @@ export const useExpenses = (): UseExpensesReturn => {
         setSelectedExpense(null);
       }
     } catch (err) {
-      setError(getErrorMessage(err));
+      const message = getErrorMessage(err);
+      setError(message);
+      toast.error('Erro ao excluir despesa', { description: message });
       throw err;
     } finally {
       setIsLoading(false);

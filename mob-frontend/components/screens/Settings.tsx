@@ -11,6 +11,7 @@ import { useFamilyContext } from '../../contexts/FamilyContext';
 import { useFamilies } from '../../hooks/useFamilies';
 import { useAuth } from '../../hooks/useAuth';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import { useToast } from '../../hooks/useToast';
 
 // Translations
 const translations = {
@@ -141,6 +142,7 @@ export function Settings() {
     removeMember,
     deleteFamily 
   } = useFamilies();
+  const { toast } = useToast();
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
   const [isEditMemberOpen, setIsEditMemberOpen] = useState(false);
@@ -202,6 +204,7 @@ export function Settings() {
       await refreshFamily();
     } catch (err) {
       console.error('Failed to add member:', err);
+      toast.error('Erro ao adicionar membro', { description: 'Não foi possível adicionar o membro' });
     }
   };
 
@@ -219,6 +222,7 @@ export function Settings() {
       await refreshFamily();
     } catch (err) {
       console.error('Failed to update member:', err);
+      toast.error('Erro ao atualizar membro', { description: 'Não foi possível atualizar o membro' });
     }
   };
 
@@ -231,6 +235,7 @@ export function Settings() {
         await refreshFamily();
       } catch (err) {
         console.error('Failed to remove member:', err);
+        toast.error('Erro ao remover membro', { description: 'Não foi possível remover o membro' });
       }
     }
   };
@@ -248,6 +253,7 @@ export function Settings() {
       window.location.href = '/';
     } catch (err) {
       console.error('Failed to delete family:', err);
+      toast.error('Erro ao excluir família', { description: 'Não foi possível excluir a família' });
     }
   };
 
