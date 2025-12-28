@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 import { useExpenses } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
@@ -205,10 +206,11 @@ export function Expenses() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">
+    <ErrorBoundary>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">
           {(() => {
             const date = new Date(selectedMonth + '-01T00:00:00');
             const month = date.toLocaleString('pt-BR', { month: 'long' });
@@ -533,6 +535,7 @@ export function Expenses() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

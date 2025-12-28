@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { useFamilies } from '../../hooks/useFamilies';
 import { useAuth } from '../../hooks/useAuth';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 // Translations
 const translations = {
@@ -289,6 +290,7 @@ export function Settings() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div>
@@ -665,5 +667,6 @@ export function Settings() {
         </div>
       </section>
     </div>
+    </ErrorBoundary>
   );
 }

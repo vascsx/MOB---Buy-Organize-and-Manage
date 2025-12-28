@@ -11,14 +11,15 @@ import type {
   EmergencyFundProgress,
   EmergencyFundSuggestion,
   CreateEmergencyFundRequest,
-  InvestmentProjection,
+  EmergencyFundProjection,
+  EmergencyFundProjectionDetail,
 } from '../lib/types/api.types';
 
 interface UseEmergencyFundReturn {
   fund: EmergencyFund | null;
   progress: EmergencyFundProgress | null;
   suggestion: EmergencyFundSuggestion | null;
-  projection: InvestmentProjection | null;
+  projection: EmergencyFundProjection | null;
   isLoading: boolean;
   error: string | null;
   fetchFund: (familyId: number) => Promise<void>;
@@ -26,7 +27,7 @@ interface UseEmergencyFundReturn {
   fetchSuggestion: (familyId: number) => Promise<void>;
   fetchProjection: (familyId: number, months?: number) => Promise<void>;
   createOrUpdate: (familyId: number, data: CreateEmergencyFundRequest) => Promise<EmergencyFund>;
-  updateCurrentAmount: (familyId: number, amountCents: number) => Promise<void>;
+  updateCurrentAmount: (familyId: number, amount: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -34,7 +35,7 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
   const [fund, setFund] = useState<EmergencyFund | null>(null);
   const [progress, setProgress] = useState<EmergencyFundProgress | null>(null);
   const [suggestion, setSuggestion] = useState<EmergencyFundSuggestion | null>(null);
-  const [projection, setProjection] = useState<InvestmentProjection | null>(null);
+  const [projection, setProjection] = useState<EmergencyFundProjection | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +78,7 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
     }
   }, []);
 
-  const fetchProjection = useCallback(async (familyId: number, months: number = 60) => {
+  const fetchProjection = useCallback(async (familyId: number, months: number = 6) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -109,11 +110,11 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
   );
 
   const updateCurrentAmount = useCallback(
-    async (familyId: number, amountCents: number): Promise<void> => {
+    async (familyId: number, amount: number): Promise<void> => {
       try {
         setIsLoading(true);
         setError(null);
-        await emergencyFundApi.updateCurrentAmount(familyId, amountCents);
+        await emergencyFundApi.updateCurrentAmount(familyId, amount);
         // Atualizar progresso após a mudança
         await fetchProgress(familyId);
       } catch (err) {

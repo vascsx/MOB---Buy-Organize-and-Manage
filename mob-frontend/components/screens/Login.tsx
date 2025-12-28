@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useAuth } from '../../hooks/useAuth';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 interface LoginProps {
   onLogin: () => void;
@@ -29,7 +30,8 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#EFF6FF] via-[#F3E8FF] to-[#F0F9FF] flex items-center justify-center p-4">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gradient-to-br from-[#EFF6FF] via-[#F3E8FF] to-[#F0F9FF] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo e Header */}
         <div className="text-center mb-8">
@@ -177,6 +179,7 @@ export function Login({ onLogin, onSwitchToRegister }: LoginProps) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

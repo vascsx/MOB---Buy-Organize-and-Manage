@@ -8,6 +8,7 @@ import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney } from '../../lib/utils/money';
 import { getInvestmentTypeIcon, getInvestmentTypeName } from '../../lib/utils/investment';
 import { AddInvestmentModal } from '../AddInvestmentModal';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function Investments() {
   const { family } = useFamilyContext();
@@ -66,9 +67,10 @@ export function Investments() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <ErrorBoundary>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">📈 Investimentos</h1>
         <Button 
           onClick={() => setShowAddModal(true)}
@@ -127,7 +129,7 @@ export function Investments() {
             <ResponsiveContainer width="100%" height={320}>
               <AreaChart
                 data={projections.flatMap(p => 
-                  p.monthly_projections.map(mp => ({
+                  p.monthly_projections.map((mp: { month: string; amount_cents: number }) => ({
                     month: mp.month,
                     value: mp.amount_cents / 100,
                   }))
@@ -238,6 +240,7 @@ export function Investments() {
           }}
         />
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

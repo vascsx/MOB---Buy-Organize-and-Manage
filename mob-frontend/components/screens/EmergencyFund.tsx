@@ -12,6 +12,7 @@ import { useEmergencyFund } from '../../hooks/useEmergencyFund';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2 } from 'lucide-react';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function EmergencyFund() {
   const { family } = useFamilyContext();
@@ -23,7 +24,9 @@ export function EmergencyFund() {
     fetchProgress, 
     fetchSuggestion,
     createOrUpdate,
-    updateCurrentAmount 
+    updateCurrentAmount,
+    projection,
+    fetchProjection
   } = useEmergencyFund();
 
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
@@ -37,8 +40,9 @@ export function EmergencyFund() {
     if (family) {
       fetchProgress(family.id);
       fetchSuggestion(family.id);
+      fetchProjection(family.id, 6);
     }
-  }, [family, fetchProgress, fetchSuggestion]);
+  }, [family, fetchProgress, fetchSuggestion, fetchProjection]);
 
   useEffect(() => {
     if (family) {
@@ -228,14 +232,13 @@ export function EmergencyFund() {
   const remaining = progress.remaining_amount;
   const estimatedMonths = progress.estimated_months;
 
-  const evolutionData = [
-    { month: 'Jul', value: 8000 },
-    { month: 'Ago', value: 9200 },
-    { month: 'Set', value: 10800 },
-    { month: 'Out', value: 12100 },
-    { month: 'Nov', value: 13400 },
-    { month: 'Dez', value: currentAmount },
-  ];
+  // Monta os dados reais de evolução a partir da projeção
+  const evolutionData = projection
+    ? projection.projection.map((item, idx) => ({
+        month: `${idx + 1}º mês`,
+        value: item.balance,
+      }))
+    : [];
 
   const milestones = [
     { percentage: 25, label: '25%', emoji: '🏅', achieved: progressPercentage >= 25 },
@@ -245,15 +248,16 @@ export function EmergencyFund() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">🚨 Reserva de Emergência</h1>
-        <p className="text-gray-600 mt-1">Seu colchão financeiro para imprevistos</p>
-      </div>
+    <ErrorBoundary>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold">🚨 Reserva de Emergência</h1>
+          <p className="text-gray-600 mt-1">Seu colchão financeiro para imprevistos</p>
+        </div>
 
-      {/* Meta */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+        {/* Meta */}
+        <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
         <h3 className="text-xl mb-3">🎯 Sua Meta</h3>
         <div className="flex items-center gap-3">
           <p className="text-2xl font-bold">{progress.target_months} meses de despesas</p>
@@ -554,6 +558,7 @@ export function EmergencyFund() {
           </DialogContent>
         </Dialog>
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

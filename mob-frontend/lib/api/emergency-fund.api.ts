@@ -8,7 +8,7 @@ import type {
   EmergencyFundProgress,
   EmergencyFundSuggestion,
   CreateEmergencyFundRequest,
-  InvestmentProjection,
+  EmergencyFundProjection,
 } from '../types/api.types';
 
 export const emergencyFundApi = {
@@ -57,8 +57,8 @@ export const emergencyFundApi = {
   /**
    * Buscar projeção da reserva
    */
-  getProjection: async (familyId: number, months: number = 60): Promise<InvestmentProjection> => {
-    const response = await apiClient.get<InvestmentProjection>(
+  getProjection: async (familyId: number, months: number = 6): Promise<EmergencyFundProjection> => {
+    const response = await apiClient.get<EmergencyFundProjection>(
       `/families/${familyId}/emergency-fund/projection`,
       { params: { months } }
     );
@@ -68,9 +68,9 @@ export const emergencyFundApi = {
   /**
    * Atualizar valor atual da reserva
    */
-  updateCurrentAmount: async (familyId: number, amountCents: number): Promise<void> => {
-    await apiClient.put(`/families/${familyId}/emergency-fund/current-amount`, {
-      current_amount_cents: amountCents,
+  updateCurrentAmount: async (familyId: number, amount: number): Promise<void> => {
+    await apiClient.put(`/families/${familyId}/emergency-fund/amount`, {
+      current_amount: amount,
     });
   },
 };

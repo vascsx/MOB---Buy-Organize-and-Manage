@@ -223,24 +223,19 @@ export interface TypeSummary {
   percentage: number;
 }
 
-export interface InvestmentProjection {
-  investment_id: number;
-  investment_name: string;
-  current_balance_cents: number;
-  monthly_contribution_cents: number;
-  annual_return_rate: number;
-  projection_months: number;
-  monthly_projections: MonthlyProjection[];
-  final_amount_cents: number;
-  total_invested_cents: number;
-  total_return_cents: number;
+// Projeção da reserva de emergência
+export interface EmergencyFundProjection {
+  current_amount: number;
+  target_amount: number;
+  monthly_goal: number;
+  months_to_goal: number;
+  projection: EmergencyFundProjectionDetail[];
 }
 
-export interface MonthlyProjection {
+export interface EmergencyFundProjectionDetail {
   month: number;
-  amount_cents: number;
-  invested_cents: number;
-  return_cents: number;
+  balance: number;
+  is_complete: boolean;
 }
 
 export interface CreateInvestmentRequest {
@@ -299,6 +294,7 @@ export interface DashboardData {
   expenses: ExpensesSummary;
   investments: InvestmentsSummary;
   emergency_fund_progress?: EmergencyFundProgress;
+  emergency_fund?: EmergencyFundProgress; // Suporte para backend que retorna emergency_fund
   available_income: number;
   financial_health_score: number;
   alerts?: Alert[];
