@@ -166,8 +166,9 @@ export interface ExpensesSummary {
 export interface CategorySummary {
   category_id: number;
   category_name: string;
-  total_cents: number;
-  percentage: number;
+  total: number;
+  count: number;
+  percentage?: number;
 }
 
 export interface MemberExpense {

@@ -38,11 +38,14 @@ export function Expenses() {
     fetchSummary,
     fetchCategoryBreakdown,
     createExpense,
+    updateExpense,
     deleteExpense,
   } = useExpenses();
 
-  const [selectedFilter, setSelectedFilter] = useState('Todas');
+  const [selectedFilter, setSelectedFilter] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
   
   // Form state
@@ -72,6 +75,27 @@ export function Expenses() {
     }
   }, [family, selectedMonth]);
 
+  // Debug: Log category breakdown data
+  useEffect(() => {
+    console.log('Category Breakdown:', categoryBreakdown);
+    console.log('Summary:', summary);
+  }, [categoryBreakdown, summary]);
+
+  const handleOpenEditModal = (expense: any) => {
+    setIsEditMode(true);
+    setEditingExpenseId(expense.id);
+    setFormData({
+      name: expense.name,
+      description: expense.description || '',
+      amount_cents: expense.amount_cents,
+      amount_cents_display: (expense.amount_cents / 100).toFixed(2).replace('.', ','),
+      category_id: String(expense.category_id),
+      frequency: expense.frequency,
+      due_day: expense.due_day || 1,
+    });
+    setIsDialogOpen(true);
+  };
+
   const handleCreateExpense = async () => {
     if (!family) return;
     
@@ -83,19 +107,39 @@ export function Expenses() {
         return;
       }
       
-      await createExpense(family.id, {
-        name: formData.name,
-        description: formData.description || undefined,
-        category_id: parseInt(formData.category_id),
-        amount_cents: formData.amount_cents, // Already in cents
-        frequency: formData.frequency,
-        due_day: formData.due_day,
-        splits: [{
-          family_member_id: defaultMember.id,
-          percentage: 100,
-        }],
-      });
+      if (isEditMode && editingExpenseId) {
+        // Update existing expense
+        await updateExpense(family.id, editingExpenseId, {
+          name: formData.name,
+          description: formData.description || undefined,
+          category_id: parseInt(formData.category_id),
+          amount_cents: formData.amount_cents,
+          frequency: formData.frequency,
+          due_day: formData.due_day,
+          splits: [{
+            family_member_id: defaultMember.id,
+            percentage: 100,
+          }],
+        });
+      } else {
+        // Create new expense
+        await createExpense(family.id, {
+          name: formData.name,
+          description: formData.description || undefined,
+          category_id: parseInt(formData.category_id),
+          amount_cents: formData.amount_cents,
+          frequency: formData.frequency,
+          due_day: formData.due_day,
+          splits: [{
+            family_member_id: defaultMember.id,
+            percentage: 100,
+          }],
+        });
+      }
+      
       setIsDialogOpen(false);
+      setIsEditMode(false);
+      setEditingExpenseId(null);
       setFormData({
         name: '',
         description: '',
@@ -110,7 +154,7 @@ export function Expenses() {
       fetchSummary(family.id);
       fetchCategoryBreakdown(family.id);
     } catch (err) {
-      console.error('Failed to create expense:', err);
+      console.error('Failed to save expense:', err);
     }
   };
 
@@ -129,7 +173,12 @@ export function Expenses() {
     }
   };
 
-  const filters = ['Todas', 'Fixas', 'Variáveis'];
+  const filters = [
+    { label: 'Todas', value: 'all' },
+    { label: 'Única', value: 'once' },
+    { label: 'Mensal', value: 'monthly' },
+    { label: 'Anual', value: 'yearly' },
+  ];
 
   if (!family) {
     return (
@@ -141,7 +190,7 @@ export function Expenses() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex justify-center items-center h-64">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
       </div>
     );
@@ -287,6 +336,8 @@ export function Expenses() {
                   variant="outline"
                   onClick={() => {
                     setIsDialogOpen(false);
+                    setIsEditMode(false);
+                    setEditingExpenseId(null);
                     setFormData({
                       name: '',
                       description: '',
@@ -305,7 +356,7 @@ export function Expenses() {
                   onClick={handleCreateExpense}
                   disabled={!formData.name || !formData.amount_cents || !formData.category_id}
                 >
-                  Salvar Despesa
+                  {isEditMode ? 'Atualizar Despesa' : 'Salvar Despesa'}
                 </Button>
               </div>
             </div>
@@ -313,24 +364,21 @@ export function Expenses() {
         </Dialog>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros por Frequência */}
       <div className="flex flex-wrap gap-2">
         {filters.map((filter) => (
           <button
-            key={filter}
-            onClick={() => setSelectedFilter(filter)}
+            key={filter.value}
+            onClick={() => setSelectedFilter(filter.value)}
             className={`px-4 py-2 rounded-lg transition-colors ${
-              selectedFilter === filter
+              selectedFilter === filter.value
                 ? 'bg-[#3B82F6] text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {filter}
+            {filter.label}
           </button>
         ))}
-        <button className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">
-          📂 Todas ▼
-        </button>
       </div>
 
       {/* Layout 2 colunas */}
@@ -340,15 +388,20 @@ export function Expenses() {
           {/* Gráfico de Pizza */}
           <Card className="p-6">
             <h3 className="text-xl mb-4">Distribuição por Categoria</h3>
-            {categoryBreakdown && categoryBreakdown.length > 0 ? (
+            {(() => {
+              const chartData = (categoryBreakdown && categoryBreakdown.length > 0) 
+                ? categoryBreakdown 
+                : (summary?.by_category || []);
+              
+              return chartData.length > 0 ? (
               <>
                 <ResponsiveContainer width="100%" height={280}>
                   <PieChart>
                     <Pie
-                      data={categoryBreakdown.map((cat) => ({
+                      data={chartData.map((cat) => ({
                         name: cat.category_name,
-                        value: cat.percentage,
-                        amount: cat.total_cents,
+                        value: cat.percentage ?? 0,
+                        amount: cat.total,
                       }))}
                       cx="50%"
                       cy="50%"
@@ -357,48 +410,57 @@ export function Expenses() {
                       dataKey="value"
                       label={({ name, value }) => `${value.toFixed(0)}%`}
                     >
-                      {categoryBreakdown.map((entry, index) => (
+                      {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={`hsl(${(index * 60) % 360}, 70%, 60%)`} />
                       ))}
                     </Pie>
                     <Tooltip
                       formatter={(value: number | undefined, name: string | undefined, props: any) => [
-                        formatMoney(props.payload.amount),
+                        formatMoney((props.payload.amount ?? 0) * 100),
                         props.payload.name,
                       ]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="text-center mt-4">
-                  <p className="text-3xl font-bold">{formatMoney((summary?.total_once || 0) + (summary?.total_monthly || 0) + (summary?.total_yearly || 0))}</p>
+                  <p className="text-3xl font-bold">{formatMoney(((summary?.total_once || 0) + (summary?.total_monthly || 0) + (summary?.total_yearly || 0)) * 100)}</p>
                   <p className="text-sm text-gray-500">Total do Mês</p>
                 </div>
               </>
             ) : (
               <p className="text-gray-500 text-center py-10">Nenhuma despesa registrada</p>
-            )}
+            );
+            })()}
           </Card>
 
           {/* Resumo por Categoria */}
           <Card className="p-6">
             <h3 className="text-xl mb-4">Resumo por Categoria</h3>
             <div className="space-y-3">
-              {categoryBreakdown && categoryBreakdown.length > 0 ? (
-                categoryBreakdown.map((cat, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">📦</span>
-                      <span className="text-sm font-medium">{cat.category_name}</span>
+              {(() => {
+                const chartData = (categoryBreakdown && categoryBreakdown.length > 0) 
+                  ? categoryBreakdown 
+                  : (summary?.by_category || []);
+                
+                return chartData.length > 0 ? (
+                  chartData.map((cat, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">
+                          {STATIC_CATEGORIES.find((c) => c.id === cat.category_id)?.icon || '📦'}
+                        </span>
+                        <span className="text-sm font-medium">{cat.category_name || 'Sem categoria'}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm text-gray-500">{(cat.percentage || 0).toFixed(0)}%</span>
+                        <span className="font-bold">{formatMoney((cat.total ?? 0) * 100)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm text-gray-500">{cat.percentage.toFixed(0)}%</span>
-                      <span className="font-bold">{formatMoney(cat.total_cents)}</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-center py-4">Nenhuma categoria</p>
-              )}
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-4">Nenhuma categoria</p>
+                );
+              })()}
             </div>
           </Card>
         </div>
@@ -407,56 +469,63 @@ export function Expenses() {
         <div className="lg:col-span-3 space-y-4">
           <h3 className="text-xl">Lista de Despesas ({expenses?.length || 0})</h3>
           {expenses && expenses.length > 0 ? (
-            expenses.map((expense) => (
-              <Card
-                key={expense.id}
-                className="p-5 hover:shadow-md transition-shadow group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">
-                      {STATIC_CATEGORIES.find((c) => c.id === expense.category_id)?.icon || '📦'}
-                    </span>
-                    <div>
-                      <h4 className="font-bold">{expense.name}</h4>
-                      {expense.description && <p className="text-sm text-gray-500">{expense.description}</p>}
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {expense.frequency === 'monthly' ? 'Mensal' : expense.frequency === 'yearly' ? 'Anual' : 'Única'}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {STATIC_CATEGORIES.find((c) => c.id === expense.category_id)?.name || 'Outros'}
-                        </Badge>
+            expenses
+              .filter((expense) =>
+                selectedFilter === 'all' ? true : expense.frequency === selectedFilter
+              )
+              .map((expense) => (
+                <Card
+                  key={expense.id}
+                  className="p-5 hover:shadow-md transition-shadow group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">
+                        {STATIC_CATEGORIES.find((c) => c.id === expense.category_id)?.icon || '📦'}
+                      </span>
+                      <div>
+                        <h4 className="font-bold">{expense.name}</h4>
+                        {expense.description && <p className="text-sm text-gray-500">{expense.description}</p>}
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {expense.frequency === 'monthly' ? 'Mensal' : expense.frequency === 'yearly' ? 'Anual' : 'Única'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {STATIC_CATEGORIES.find((c) => c.id === expense.category_id)?.name || 'Outros'}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                        onClick={() => handleOpenEditModal(expense)}
+                      >
+                        <Edit2 className="w-4 h-4 text-gray-600" />
+                      </button>
+                      <button 
+                        className="p-2 hover:bg-red-50 rounded-lg"
+                        onClick={() => handleDeleteExpense(expense.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-2 hover:bg-gray-100 rounded-lg">
-                      <Edit2 className="w-4 h-4 text-gray-600" />
-                    </button>
-                    <button 
-                      className="p-2 hover:bg-red-50 rounded-lg"
-                      onClick={() => handleDeleteExpense(expense.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </button>
+
+                  <p className="text-2xl font-bold mb-3">{formatMoney(expense.amount_cents)}</p>
+
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>
+                      {new Date(expense.created_at).toLocaleDateString('pt-BR')}
+                    </span>
+                    {expense.frequency === 'monthly' && (
+                      <Badge className="bg-blue-100 text-blue-700 text-xs">
+                        Recorrente
+                      </Badge>
+                    )}
                   </div>
-                </div>
-
-                <p className="text-2xl font-bold mb-3">{formatMoney(expense.amount_cents)}</p>
-
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>
-                    {new Date(expense.created_at).toLocaleDateString('pt-BR')}
-                  </span>
-                  {expense.frequency === 'monthly' && (
-                    <Badge className="bg-blue-100 text-blue-700 text-xs">
-                      Recorrente
-                    </Badge>
-                  )}
-                </div>
-              </Card>
-            ))
+                </Card>
+              ))
           ) : (
             <Card className="p-10">
               <p className="text-gray-500 text-center">Nenhuma despesa registrada neste mês</p>

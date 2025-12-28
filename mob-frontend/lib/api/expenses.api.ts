@@ -53,10 +53,15 @@ export const expensesApi = {
    * Buscar despesas por categoria
    */
   getExpensesByCategory: async (familyId: number): Promise<CategorySummary[]> => {
-    const response = await apiClient.get<CategorySummary[]>(
+    const response = await apiClient.get<{ categories: CategorySummary[]; total_amount: number }>(
       `/families/${familyId}/expenses/by-category`
     );
-    return response.data;
+    const { categories, total_amount } = response.data;
+    // Calcular percentagem para cada categoria
+    return categories.map(cat => ({
+      ...cat,
+      percentage: total_amount > 0 ? (cat.total / total_amount) * 100 : 0,
+    }));
   },
 
   /**

@@ -76,15 +76,15 @@ func (ctrl *EmergencyFundController) UpdateCurrentAmount(c *gin.Context) {
 	familyID := c.GetUint("family_id")
 	
 	var input struct {
-		CurrentAmountCents int64 `json:"current_amount_cents" binding:"required"`
+		CurrentAmount float64 `json:"current_amount" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, 400, "Dados inválidos")
 		return
 	}
-	
-	err := ctrl.emergencyService.UpdateCurrentAmount(familyID, input.CurrentAmountCents)
+
+	err := ctrl.emergencyService.UpdateCurrentAmount(familyID, input.CurrentAmount)
 	if err != nil {
 		utils.ErrorResponse(c, 400, err.Error())
 		return

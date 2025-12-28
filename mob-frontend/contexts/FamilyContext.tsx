@@ -14,6 +14,7 @@ interface FamilyContextValue {
   isLoading: boolean;
   error: string | null;
   fetchFamily: () => Promise<void>;
+  refreshFamily: () => Promise<void>;
   createFamily: (data: CreateFamilyRequest) => Promise<FamilyAccount>;
   updateFamily: (data: Partial<FamilyAccount>) => Promise<void>;
   fetchMembers: () => Promise<void>;
@@ -160,12 +161,16 @@ export const FamilyProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const clearError = () => setError(null);
 
+  // Alias for fetchFamily to refresh current family
+  const refreshFamily = fetchFamily;
+
   const value: FamilyContextValue = {
     family,
     members,
     isLoading,
     error,
     fetchFamily,
+    refreshFamily,
     createFamily,
     updateFamily,
     fetchMembers,

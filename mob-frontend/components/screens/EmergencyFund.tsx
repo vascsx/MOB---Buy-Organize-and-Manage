@@ -78,7 +78,7 @@ export function EmergencyFund() {
       await createOrUpdate(family.id, {
         target_months: selectedGoal,
         monthly_expenses: monthlyCost,
-        monthly_goal: monthlyContribution,
+        monthly_goal: monthlyContribution / 100, // Enviar em reais
       });
       setIsAdjustModalOpen(false);
       await fetchProgress(family.id);
@@ -185,10 +185,10 @@ export function EmergencyFund() {
                 )}
                 <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                   <p className="text-sm font-medium text-blue-900">
-                    Meta: R$ {(monthlyCost * selectedGoal).toLocaleString()}
+                    Meta: R$ {isNaN(monthlyCost * selectedGoal) ? '0' : (monthlyCost * selectedGoal).toLocaleString()}
                   </p>
                   <p className="text-xs text-blue-700 mt-1">
-                    {selectedGoal} meses × R$ {monthlyCost.toLocaleString()}
+                    {selectedGoal} meses × R$ {isNaN(monthlyCost) ? '0' : monthlyCost.toLocaleString()}
                   </p>
                 </div>
               </div>
