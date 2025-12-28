@@ -62,6 +62,7 @@ func (r *IncomeRepository) GetByFamilyID(familyID uint) ([]models.Income, error)
 }
 
 // GetByFamilyIDAndMonth busca rendas de uma família filtradas por mês/ano
+// Se não encontrar rendas no mês específico, retorna a renda mais recente de cada membro como padrão
 func (r *IncomeRepository) GetByFamilyIDAndMonth(familyID uint, month, year int) ([]models.Income, error) {
 	var incomes []models.Income
 	err := r.db.Joins("JOIN family_members ON family_members.id = incomes.family_member_id").
@@ -72,6 +73,52 @@ func (r *IncomeRepository) GetByFamilyIDAndMonth(familyID uint, month, year int)
 		}).
 		Select("incomes.*").
 		Find(&incomes).Error
+	
+	if err != nil {
+		return incomes, err
+	}
+	
+	// Se não encontrou rendas para o mês específico, buscar a renda mais recente de cada membro
+	if len(incomes) == 0 {
+		var fallbackIncomes []models.Income
+		err = r.db.Raw(`
+			SELECT DISTINCT ON (incomes.family_member_id) incomes.*
+			FROM incomes 
+			JOIN family_members ON family_members.id = incomes.family_member_id
+			WHERE family_members.family_account_id = ? 
+			  AND incomes.is_active = true
+			ORDER BY incomes.family_member_id, incomes.reference_year DESC, incomes.reference_month DESC, incomes.created_at DESC
+		`, familyID).Scan(&fallbackIncomes).Error
+		
+		if err != nil {
+			return incomes, err
+		}
+		
+		// Preload FamilyMember para os fallbackIncomes
+		var memberIDs []uint
+		for _, income := range fallbackIncomes {
+			memberIDs = append(memberIDs, income.FamilyMemberID)
+		}
+		
+		if len(memberIDs) > 0 {
+			var members []models.FamilyMember
+			r.db.Where("id IN ?", memberIDs).Select("id", "name", "family_account_id", "role").Find(&members)
+			
+			// Map members to incomes
+			memberMap := make(map[uint]models.FamilyMember)
+			for _, member := range members {
+				memberMap[member.ID] = member
+			}
+			
+			for i := range fallbackIncomes {
+				if member, exists := memberMap[fallbackIncomes[i].FamilyMemberID]; exists {
+					fallbackIncomes[i].FamilyMember = member
+				}
+			}
+		}
+		
+		return fallbackIncomes, nil
+	}
 	
 	return incomes, err
 }

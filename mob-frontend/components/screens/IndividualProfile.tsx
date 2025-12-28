@@ -6,6 +6,7 @@ import { Card } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription } from '../ui/alert';
 import { useIncomes } from '../../hooks';
+import { useMonth } from '../../contexts/MonthContext';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { useToast } from '../../hooks/useToast';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
@@ -14,6 +15,7 @@ import { AddIncomeModal } from '../AddIncomeModal';
 import { AddMemberModal } from '../AddMemberModal';
 import { EditIncomeModal } from '../EditIncomeModal';
 
+
 interface IndividualProfileProps {
   onBack: () => void;
   memberId?: number;
@@ -21,6 +23,7 @@ interface IndividualProfileProps {
 
 export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) {
   const { family, members, fetchMembers } = useFamilyContext();
+  const { selectedMonth } = useMonth();
   const { incomes, breakdown, fetchIncomes, fetchBreakdown, createIncome, deleteIncome, isLoading, error } = useIncomes();
   const { toast } = useToast();
   const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
@@ -31,10 +34,10 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
 
   useEffect(() => {
     if (family) {
-      fetchIncomes(family.id);
+      fetchIncomes(family.id, selectedMonth);
       fetchMembers();
     }
-  }, [family, fetchIncomes, fetchMembers]);
+  }, [family, selectedMonth, fetchIncomes, fetchMembers]);
 
   useEffect(() => {
     if (incomes.length > 0) {
@@ -55,7 +58,9 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
       // Se não houver mais incomes, limpar seleção
       setSelectedIncome(null);
     }
-  }, [incomes, memberId, family, fetchBreakdown]);
+  }, [incomes, memberId, family, fetchBreakdown, selectedMonth]);
+
+
 
   if (!family) {
     return (
@@ -148,7 +153,7 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
             onSuccess={async () => {
               setShowAddModal(false);
               if (family) {
-                await fetchIncomes(family.id);
+                await fetchIncomes(family.id, selectedMonth);
               }
             }}
           />
@@ -256,7 +261,24 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
               </div>
 
               <div className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-lg p-4">
-                <p className="text-sm text-gray-700 mb-1">💰 Renda Líquida Mensal</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-sm text-gray-700">💰 Renda Líquida Mensal</p>
+                  {(() => {
+                    const currentDate = new Date(selectedMonth + '-01T00:00:00');
+                    const incomeDate = new Date(`${income.reference_year}-${String(income.reference_month).padStart(2, '0')}-01T00:00:00`);
+                    const isSameMonth = currentDate.getTime() === incomeDate.getTime();
+                    
+                    if (!isSameMonth) {
+                      const monthName = incomeDate.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
+                      return (
+                        <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+                          Ref: {monthName}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
                 <p className="text-2xl font-bold text-gray-900">{formatMoney(income.net_monthly_cents || 0)}</p>
               </div>
 
@@ -320,7 +342,7 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
               setShowEditModal(false);
               setSelectedIncome(null);
               if (family) {
-                await fetchIncomes(family.id);
+                await fetchIncomes(family.id, selectedMonth);
               }
             }}
           />
@@ -431,7 +453,24 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
 
       {/* Card Renda Mensal */}
       <Card className="bg-gradient-to-br from-[#EFF6FF] to-[#DBEAFE] rounded-lg p-6 shadow-sm border border-gray-100">
-        <p className="text-sm text-gray-700 mb-2">💰 Renda Mensal</p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm text-gray-700">💰 Renda Mensal</p>
+          {(() => {
+            const currentDate = new Date(selectedMonth + '-01T00:00:00');
+            const incomeDate = new Date(`${selectedIncome.reference_year}-${String(selectedIncome.reference_month).padStart(2, '0')}-01T00:00:00`);
+            const isSameMonth = currentDate.getTime() === incomeDate.getTime();
+            
+            if (!isSameMonth) {
+              const monthName = incomeDate.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
+              return (
+                <span className="text-xs px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+                  Referência: {monthName}
+                </span>
+              );
+            }
+            return null;
+          })()}
+        </div>
         <div className="mb-3">
           <p className="text-4xl font-bold text-gray-900">{formatMoney(selectedIncome.net_monthly_cents || 0)}</p>
           <span className="text-gray-600 text-sm"> / mês (líquido)</span>
@@ -497,7 +536,7 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
           onSuccess={async () => {
             setShowAddModal(false);
             if (family) {
-              await fetchIncomes(family.id);
+              await fetchIncomes(family.id, selectedMonth);
             }
           }}
         />
@@ -515,7 +554,7 @@ export function IndividualProfile({ onBack, memberId }: IndividualProfileProps) 
             setShowEditModal(false);
             setSelectedIncome(null);
             if (family) {
-              await fetchIncomes(family.id);
+              await fetchIncomes(family.id, selectedMonth);
             }
           }}
         />

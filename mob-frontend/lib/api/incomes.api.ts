@@ -22,8 +22,9 @@ export const incomesApi = {
   /**
    * Buscar rendas da família
    */
-  getFamilyIncomes: async (familyId: number): Promise<Income[]> => {
-    const response = await apiClient.get<Income[]>(`/families/${familyId}/incomes`);
+  getFamilyIncomes: async (familyId: number, month?: string): Promise<Income[]> => {
+    const params = month ? { month } : {};
+    const response = await apiClient.get<Income[]>(`/families/${familyId}/incomes`, { params });
     return response.data;
   },
 

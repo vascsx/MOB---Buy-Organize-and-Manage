@@ -6,6 +6,7 @@ import (
 	"finance-backend/repositories"
 	"finance-backend/services/calculation"
 	"finance-backend/utils"
+	"time"
 )
 
 type IncomeService struct {
@@ -39,6 +40,13 @@ func (s *IncomeService) CreateIncome(income *models.Income) error {
 	// Se gross_monthly_cents não foi informado, usar o net_monthly_cents como base
 	if income.GrossMonthlyCents == 0 {
 		income.GrossMonthlyCents = income.NetMonthlyCents
+	}
+	
+	// Se reference_month e reference_year não foram informados, usar mês/ano atual
+	if income.ReferenceMonth == 0 {
+		now := time.Now()
+		income.ReferenceMonth = int(now.Month())
+		income.ReferenceYear = now.Year()
 	}
 	
 	// Usar transação para garantir atomicidade
@@ -139,6 +147,11 @@ func (s *IncomeService) GetIncomesByMemberID(memberID uint) ([]models.Income, er
 // GetIncomesByFamilyID busca rendas de uma família
 func (s *IncomeService) GetIncomesByFamilyID(familyID uint) ([]models.Income, error) {
 	return s.incomeRepo.GetByFamilyID(familyID)
+}
+
+// GetIncomesByFamilyIDAndMonth busca rendas de uma família filtradas por mês/ano
+func (s *IncomeService) GetIncomesByFamilyIDAndMonth(familyID uint, month, year int) ([]models.Income, error) {
+	return s.incomeRepo.GetByFamilyIDAndMonth(familyID, month, year)
 }
 
 // GetFamilyTotalIncome calcula renda líquida total da família

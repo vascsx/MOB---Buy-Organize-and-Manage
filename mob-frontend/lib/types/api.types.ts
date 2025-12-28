@@ -70,6 +70,8 @@ export interface Income {
   food_voucher_cents: number;
   transport_voucher_cents: number;
   bonus_cents: number;
+  reference_month: number;
+  reference_year: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;

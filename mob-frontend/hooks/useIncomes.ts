@@ -21,7 +21,7 @@ interface UseIncomesReturn {
   breakdown: IncomeBreakdown | null;
   isLoading: boolean;
   error: string | null;
-  fetchIncomes: (familyId: number) => Promise<void>;
+  fetchIncomes: (familyId: number, month?: string) => Promise<void>;
   fetchSummary: (familyId: number, month?: string) => Promise<void>;
   fetchIncome: (familyId: number, incomeId: number) => Promise<void>;
   fetchBreakdown: (familyId: number, incomeId: number) => Promise<void>;
@@ -40,11 +40,11 @@ export const useIncomes = (): UseIncomesReturn => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchIncomes = useCallback(async (familyId: number) => {
+  const fetchIncomes = useCallback(async (familyId: number, month?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await incomesApi.getFamilyIncomes(familyId);
+      const data = await incomesApi.getFamilyIncomes(familyId, month);
       setIncomes(data);
     } catch (err) {
       const message = getErrorMessage(err);

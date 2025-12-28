@@ -83,8 +83,28 @@ func (ctrl *IncomeController) GetIncome(c *gin.Context) {
 // GetFamilyIncomes busca rendas de uma família
 func (ctrl *IncomeController) GetFamilyIncomes(c *gin.Context) {
 	familyID := c.GetUint("family_id")
+	monthParam := c.Query("month") // Formato: YYYY-MM
 	
-	incomes, err := ctrl.incomeService.GetIncomesByFamilyID(familyID)
+	// Parsear mês/ano do query parameter
+	month, year := 0, 0
+	if monthParam != "" {
+		var parseErr error
+		_, parseErr = fmt.Sscanf(monthParam, "%d-%d", &year, &month)
+		if parseErr != nil || month < 1 || month > 12 || year < 2000 {
+			utils.ErrorResponse(c, 400, "Formato de mês inválido. Use YYYY-MM (ex: 2024-03)")
+			return
+		}
+	}
+	
+	var incomes []models.Income
+	var err error
+	
+	if monthParam != "" {
+		incomes, err = ctrl.incomeService.GetIncomesByFamilyIDAndMonth(familyID, month, year)
+	} else {
+		incomes, err = ctrl.incomeService.GetIncomesByFamilyID(familyID)
+	}
+	
 	if err != nil {
 		utils.InternalErrorResponse(c, "Erro ao buscar rendas")
 		return
