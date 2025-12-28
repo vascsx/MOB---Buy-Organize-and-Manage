@@ -120,7 +120,7 @@ export interface CreateIncomeRequest {
 }
 
 // ===== EXPENSE =====
-export type ExpenseFrequency = 'once' | 'monthly' | 'yearly';
+export type ExpenseFrequency = 'one_time' | 'monthly' | 'yearly';
 
 export interface ExpenseCategory {
   id: number;
@@ -301,9 +301,12 @@ export interface DashboardData {
 }
 
 export interface Alert {
-  type: 'warning' | 'success' | 'info' | 'error';
+  type: string;
+  category: string;
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
   message: string;
-  category?: string;
+  value?: number;
 }
 
 // ===== PAGINATION & FILTERS =====

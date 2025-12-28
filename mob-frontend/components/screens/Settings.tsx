@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, TrendingUp, ShieldCheck, Target, DollarSign, AlertTriangle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback } from '../ui/avatar';
@@ -7,6 +7,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Switch } from '../ui/switch';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { useFamilies } from '../../hooks/useFamilies';
 import { useAuth } from '../../hooks/useAuth';
@@ -54,6 +55,18 @@ const translations = {
     spendingAlerts: 'Alertas de gastos',
     goalsAchieved: 'Metas atingidas',
     weeklyNewsletter: 'Newsletter semanal',
+    dashboardAlerts: '🔔 Alertas do Dashboard',
+    dashboardAlertsDesc: 'Configure quais alertas serão exibidos no painel principal',
+    highExpensesAlert: 'Alertas de gastos elevados',
+    highExpensesDesc: 'Notifica quando despesas ultrapassam limite',
+    emergencyFundAlert: 'Progresso da reserva de emergência',
+    emergencyFundDesc: 'Acompanhamento da meta de reserva',
+    investmentAlert: 'Oportunidades de investimento',
+    investmentDesc: 'Sugestões baseadas em saldo disponível',
+    savingsGoalAlert: 'Metas de economia',
+    savingsGoalDesc: 'Progresso de metas financeiras',
+    incomeVariationAlert: 'Variação de renda',
+    incomeVariationDesc: 'Mudanças significativas na renda',
     accountSecurity: '🔒 Conta e Segurança',
     deleteFamily: 'Excluir Família',
     areYouSure: 'Tem certeza?',
@@ -110,6 +123,18 @@ const translations = {
     spendingAlerts: 'Spending alerts',
     goalsAchieved: 'Goals achieved',
     weeklyNewsletter: 'Weekly newsletter',
+    dashboardAlerts: '🔔 Dashboard Alerts',
+    dashboardAlertsDesc: 'Configure which alerts will be displayed on the main panel',
+    highExpensesAlert: 'High expenses alerts',
+    highExpensesDesc: 'Notifies when expenses exceed limit',
+    emergencyFundAlert: 'Emergency fund progress',
+    emergencyFundDesc: 'Track emergency fund goal',
+    investmentAlert: 'Investment opportunities',
+    investmentDesc: 'Suggestions based on available balance',
+    savingsGoalAlert: 'Savings goals',
+    savingsGoalDesc: 'Financial goals progress',
+    incomeVariationAlert: 'Income variation',
+    incomeVariationDesc: 'Significant changes in income',
     accountSecurity: '🔒 Account & Security',
     deleteFamily: 'Delete Family',
     areYouSure: 'Are you sure?',
@@ -152,6 +177,15 @@ export function Settings() {
   const [language, setLanguage] = useState<'pt-BR' | 'en-US'>('pt-BR');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
+  // Alert settings
+  const [alertSettings, setAlertSettings] = useState({
+    highExpenses: true,
+    emergencyFund: true,
+    investment: true,
+    savingsGoal: true,
+    incomeVariation: true,
+  });
+  
   // Form state for add member
   const [newMemberForm, setNewMemberForm] = useState({
     name: '',
@@ -172,10 +206,19 @@ export function Settings() {
   useEffect(() => {
     const savedLanguage = localStorage.getItem('language') as 'pt-BR' | 'en-US';
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark';
+    const savedAlerts = localStorage.getItem('alertSettings');
+    
     if (savedLanguage) setLanguage(savedLanguage);
     if (savedTheme) {
       setTheme(savedTheme);
       document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+    }
+    if (savedAlerts) {
+      try {
+        setAlertSettings(JSON.parse(savedAlerts));
+      } catch (e) {
+        console.error('Failed to parse alert settings:', e);
+      }
     }
   }, []);
 
@@ -188,6 +231,15 @@ export function Settings() {
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
+
+  const handleAlertToggle = (alertType: keyof typeof alertSettings) => {
+    const newSettings = {
+      ...alertSettings,
+      [alertType]: !alertSettings[alertType],
+    };
+    setAlertSettings(newSettings);
+    localStorage.setItem('alertSettings', JSON.stringify(newSettings));
   };
 
   const handleAddMember = async () => {
@@ -522,16 +574,155 @@ export function Settings() {
         </Dialog>
       </section>
 
-      {/* Divisão Padrão */}
-      <section className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold mb-3">{t.expenseDivision}</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          {t.expenseDivisionDesc}
-        </p>
-        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-          <p className="text-sm text-blue-800">
-            {t.expenseDivisionInfo}
-          </p>
+      {/* Alertas do Dashboard */}
+      <section className="bg-gradient-to-br from-white to-blue-50/30 rounded-xl p-6 shadow-sm border border-blue-100">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <span className="text-2xl">🔔</span>
+            {t.dashboardAlerts}
+          </h2>
+          <p className="text-sm text-gray-600 mt-2">{t.dashboardAlertsDesc}</p>
+        </div>
+        <div className="space-y-3">
+          {/* High Expenses Alert */}
+          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <label htmlFor="alert-high-expenses" className="font-semibold cursor-pointer text-gray-900">
+                    {t.highExpensesAlert}
+                  </label>
+                  <Badge 
+                    variant={alertSettings.highExpenses ? "default" : "secondary"}
+                    className={alertSettings.highExpenses ? "bg-green-500 text-white" : "bg-gray-300 text-gray-600"}
+                  >
+                    {alertSettings.highExpenses ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600">{t.highExpensesDesc}</p>
+              </div>
+            </div>
+            <Switch
+              id="alert-high-expenses"
+              checked={alertSettings.highExpenses}
+              onCheckedChange={() => handleAlertToggle('highExpenses')}
+            />
+          </div>
+
+          {/* Emergency Fund Alert */}
+          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <ShieldCheck className="w-5 h-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <label htmlFor="alert-emergency-fund" className="font-semibold cursor-pointer text-gray-900">
+                    {t.emergencyFundAlert}
+                  </label>
+                  <Badge 
+                    variant={alertSettings.emergencyFund ? "default" : "secondary"}
+                    className={alertSettings.emergencyFund ? "bg-green-500 text-white" : "bg-gray-300 text-gray-600"}
+                  >
+                    {alertSettings.emergencyFund ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600">{t.emergencyFundDesc}</p>
+              </div>
+            </div>
+            <Switch
+              id="alert-emergency-fund"
+              checked={alertSettings.emergencyFund}
+              onCheckedChange={() => handleAlertToggle('emergencyFund')}
+            />
+          </div>
+
+          {/* Investment Alert */}
+          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <label htmlFor="alert-investment" className="font-semibold cursor-pointer text-gray-900">
+                    {t.investmentAlert}
+                  </label>
+                  <Badge 
+                    variant={alertSettings.investment ? "default" : "secondary"}
+                    className={alertSettings.investment ? "bg-green-500 text-white" : "bg-gray-300 text-gray-600"}
+                  >
+                    {alertSettings.investment ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600">{t.investmentDesc}</p>
+              </div>
+            </div>
+            <Switch
+              id="alert-investment"
+              checked={alertSettings.investment}
+              onCheckedChange={() => handleAlertToggle('investment')}
+            />
+          </div>
+
+          {/* Savings Goal Alert */}
+          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Target className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <label htmlFor="alert-savings-goal" className="font-semibold cursor-pointer text-gray-900">
+                    {t.savingsGoalAlert}
+                  </label>
+                  <Badge 
+                    variant={alertSettings.savingsGoal ? "default" : "secondary"}
+                    className={alertSettings.savingsGoal ? "bg-green-500 text-white" : "bg-gray-300 text-gray-600"}
+                  >
+                    {alertSettings.savingsGoal ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600">{t.savingsGoalDesc}</p>
+              </div>
+            </div>
+            <Switch
+              id="alert-savings-goal"
+              checked={alertSettings.savingsGoal}
+              onCheckedChange={() => handleAlertToggle('savingsGoal')}
+            />
+          </div>
+
+          {/* Income Variation Alert */}
+          <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <DollarSign className="w-5 h-5 text-yellow-600" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <label htmlFor="alert-income-variation" className="font-semibold cursor-pointer text-gray-900">
+                    {t.incomeVariationAlert}
+                  </label>
+                  <Badge 
+                    variant={alertSettings.incomeVariation ? "default" : "secondary"}
+                    className={alertSettings.incomeVariation ? "bg-green-500 text-white" : "bg-gray-300 text-gray-600"}
+                  >
+                    {alertSettings.incomeVariation ? 'Ativo' : 'Inativo'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-gray-600">{t.incomeVariationDesc}</p>
+              </div>
+            </div>
+            <Switch
+              id="alert-income-variation"
+              checked={alertSettings.incomeVariation}
+              onCheckedChange={() => handleAlertToggle('incomeVariation')}
+            />
+          </div>
         </div>
       </section>
 

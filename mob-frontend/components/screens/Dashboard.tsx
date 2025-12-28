@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import type { Alert as AlertType } from '../../lib/types/api.types';
 import { useDashboard } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { formatMoney } from '../../lib/utils/money';
@@ -21,6 +22,53 @@ export function Dashboard() {
       fetchDashboard(family.id);
     }
   }, [family, fetchDashboard]);
+
+
+  // Suporte para emergency_fund_progress ou emergency_fund
+  let emergencyFundProgress = undefined;
+  let filteredAlerts: AlertType[] = [];
+  if (data) {
+    emergencyFundProgress = data.emergency_fund_progress || data.emergency_fund;
+
+    // Lógica para filtrar alertas conforme alertSettings do localStorage
+    type AlertSettings = {
+      highExpenses: boolean;
+      emergencyFund: boolean;
+      investment: boolean;
+      savingsGoal: boolean;
+      incomeVariation: boolean;
+    };
+    const defaultSettings: AlertSettings = {
+      highExpenses: true,
+      emergencyFund: true,
+      investment: true,
+      savingsGoal: true,
+      incomeVariation: true,
+    };
+    let alertSettings: AlertSettings = defaultSettings;
+    try {
+      const saved = localStorage.getItem('alertSettings');
+      if (saved) {
+        alertSettings = { ...defaultSettings, ...JSON.parse(saved) };
+      }
+    } catch {}
+
+    const alertTypeMap: Record<string, keyof AlertSettings> = {
+      high_expenses: 'highExpenses',
+      emergency_fund: 'emergencyFund',
+      investment: 'investment',
+      savings_goal: 'savingsGoal',
+      income_variation: 'incomeVariation',
+    };
+
+    filteredAlerts = (data.alerts || []).filter((alert: AlertType) => {
+      const cat = (alert as any).category as string | undefined;
+      const typ = (alert as any).type as string | undefined;
+      const key = (cat && alertTypeMap[cat]) || (typ && alertTypeMap[typ]) || null;
+      if (!key) return true;
+      return alertSettings[key] !== false;
+    });
+  }
 
   if (!family) {
     return (
@@ -49,9 +97,6 @@ export function Dashboard() {
       </div>
     );
   }
-
-  // Suporte para emergency_fund_progress ou emergency_fund
-  const emergencyFundProgress = data.emergency_fund_progress || data.emergency_fund;
 
   return (
     <div className="space-y-6">
@@ -94,7 +139,7 @@ export function Dashboard() {
           />
         </ErrorBoundary>
         <ErrorBoundary>
-          <Alerts alerts={data.alerts} />
+          <Alerts alerts={filteredAlerts} />
         </ErrorBoundary>
       </div>
 

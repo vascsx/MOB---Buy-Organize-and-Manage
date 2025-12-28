@@ -35,6 +35,13 @@ func (s *ExpenseService) CreateExpense(expense *models.Expense, splits []Expense
 	validator.Add(utils.ValidateExpenseFrequency(string(expense.Frequency)))
 	validator.Add(utils.ValidateDueDay(expense.DueDay))
 	
+	if len(splits) == 0 {
+		validator.AddError(utils.ValidationError{
+			Field:   "splits",
+			Message: "pelo menos um membro deve ser incluído",
+		})
+	}
+	
 	// Validar splits
 	splitsForValidation := make([]struct {
 		FamilyMemberID uint

@@ -22,14 +22,14 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 	familyID := c.GetUint("family_id")
 	
 	var input struct {
-		CategoryID  uint                         `json:"category_id" binding:"required"`
-		Name        string                       `json:"name" binding:"required"`
+		CategoryID  uint                         `json:"category_id"`
+		Name        string                       `json:"name"`
 		Description string                       `json:"description"`
-		AmountCents int64                        `json:"amount_cents" binding:"required"`
+		AmountCents int64                        `json:"amount_cents"`
 		Frequency   string                       `json:"frequency"`
 		DueDay      int                          `json:"due_day"`
 		IsFixed     bool                         `json:"is_fixed"`
-		Splits      []services.ExpenseSplitInput `json:"splits" binding:"required"`
+		Splits      []services.ExpenseSplitInput `json:"splits"`
 	}
 	
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -51,6 +51,11 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 	
 	err := ctrl.expenseService.CreateExpense(expense, input.Splits)
 	if err != nil {
+		// Se for erro de validação, retornar detalhes
+		if validationErr, ok := err.(utils.ValidationErrors); ok {
+			utils.ValidationErrorResponse(c, validationErr)
+			return
+		}
 		utils.ErrorResponse(c, 400, err.Error())
 		return
 	}
@@ -158,6 +163,11 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 	
 	err = ctrl.expenseService.UpdateExpense(expense, input.Splits)
 	if err != nil {
+		// Se for erro de validação, retornar detalhes
+		if validationErr, ok := err.(utils.ValidationErrors); ok {
+			utils.ValidationErrorResponse(c, validationErr)
+			return
+		}
 		utils.ErrorResponse(c, 400, err.Error())
 		return
 	}

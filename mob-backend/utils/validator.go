@@ -301,6 +301,11 @@ func (v *Validator) Add(err error) {
 	}
 }
 
+// AddError adiciona um erro de validação diretamente
+func (v *Validator) AddError(err ValidationError) {
+	v.Errors = append(v.Errors, err)
+}
+
 // HasErrors verifica se há erros
 func (v *Validator) HasErrors() bool {
 	return len(v.Errors) > 0

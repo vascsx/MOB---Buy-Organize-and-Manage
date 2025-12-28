@@ -14,6 +14,7 @@ import { useExpenses } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
 import { useToast } from '../../hooks/useToast';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
+import { getErrorMessage } from '../../lib/api/client';
 
 // Static categories matching backend expectations
 const STATIC_CATEGORIES = [
@@ -29,7 +30,7 @@ const STATIC_CATEGORIES = [
 ];
 
 export function Expenses() {
-  const { family, members } = useFamilyContext();
+  const { family, members, fetchMembers } = useFamilyContext();
   const {
     expenses,
     summary,
@@ -58,7 +59,7 @@ export function Expenses() {
     amount_cents: number;
     amount_cents_display: string;
     category_id: string;
-    frequency: 'once' | 'monthly' | 'yearly';
+    frequency: 'one_time' | 'monthly' | 'yearly';
     due_day: number;
   }>({
     name: '',
@@ -66,9 +67,10 @@ export function Expenses() {
     amount_cents: 0,
     amount_cents_display: '',
     category_id: '',
-    frequency: 'once',
+    frequency: 'one_time',
     due_day: 1,
   });
+
 
   useEffect(() => {
     if (family) {
@@ -78,13 +80,16 @@ export function Expenses() {
     }
   }, [family, selectedMonth]);
 
-  // Debug: Log category breakdown data
+  // Garante que os membros estejam carregados
   useEffect(() => {
-    console.log('Category Breakdown:', categoryBreakdown);
-    console.log('Summary:', summary);
-  }, [categoryBreakdown, summary]);
+    if (family && (!members || members.length === 0)) {
+      fetchMembers();
+    }
+  }, [family, members, fetchMembers]);
+
 
   const handleOpenEditModal = (expense: any) => {
+    setFormError(null);
     setIsEditMode(true);
     setEditingExpenseId(expense.id);
     setFormData({
@@ -99,17 +104,42 @@ export function Expenses() {
     setIsDialogOpen(true);
   };
 
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      // Limpar erro e formulário ao fechar
+      setFormError(null);
+      setIsEditMode(false);
+      setEditingExpenseId(null);
+      setFormData({
+        name: '',
+        description: '',
+        amount_cents: 0,
+        amount_cents_display: '',
+        category_id: '',
+        frequency: 'one_time',
+        due_day: 1,
+      });
+    }
+    setIsDialogOpen(open);
+  };
+
   const handleCreateExpense = async () => {
     if (!family) return;
+    setFormError(null);
+    
+    // Get the first member from family to use as default split
+    const defaultMember = members?.[0];
+    if (!defaultMember) {
+      const errorMsg = 'Nenhum membro da família encontrado. Adicione um membro antes de criar despesas.';
+      setFormError(errorMsg);
+      toast.error('Erro ao salvar despesa', { description: errorMsg });
+      return;
+    }
     
     try {
-      // Get the first member from family to use as default split
-      const defaultMember = members?.[0];
-      if (!defaultMember) {
-        console.error('No family members found');
-        return;
-      }
-      
+
       if (isEditMode && editingExpenseId) {
         // Update existing expense
         await updateExpense(family.id, editingExpenseId, {
@@ -139,7 +169,7 @@ export function Expenses() {
           }],
         });
       }
-      
+
       setIsDialogOpen(false);
       setIsEditMode(false);
       setEditingExpenseId(null);
@@ -149,16 +179,21 @@ export function Expenses() {
         amount_cents: 0,
         amount_cents_display: '',
         category_id: '',
-        frequency: 'once' as const,
+        frequency: 'one_time' as const,
         due_day: 1,
       });
       // Refresh data
       fetchExpenses(family.id);
       fetchSummary(family.id);
       fetchCategoryBreakdown(family.id);
-    } catch (err) {
+      
+      toast.success('Sucesso!', { description: isEditMode ? 'Despesa atualizada' : 'Despesa criada' });
+    } catch (err: any) {
       console.error('Failed to save expense:', err);
-      toast.error('Erro ao salvar despesa', { description: 'Não foi possível salvar a despesa' });
+      const errorMsg = getErrorMessage(err);
+      setFormError(errorMsg);
+      toast.error('Erro ao salvar despesa', { description: errorMsg });
+      // Não fecha o modal - usuário pode corrigir o erro
     }
   };
 
@@ -180,7 +215,7 @@ export function Expenses() {
 
   const filters = [
     { label: 'Todas', value: 'all' },
-    { label: 'Única', value: 'once' },
+    { label: 'Única', value: 'one_time' },
     { label: 'Mensal', value: 'monthly' },
     { label: 'Anual', value: 'yearly' },
   ];
@@ -222,14 +257,26 @@ export function Expenses() {
             return `💸 Despesas de ${month.charAt(0).toUpperCase() + month.slice(1)} de ${year}`;
           })()}
         </h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
-            <Button className="bg-[#3B82F6] hover:bg-[#2563EB]">
+            <Button 
+              className="bg-[#3B82F6] hover:bg-[#2563EB]"
+              onClick={() => {
+                setFormError(null);
+                setIsEditMode(false);
+                setEditingExpenseId(null);
+              }}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Nova Despesa
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
+            {formError && (
+              <div className="mb-2 p-2 bg-red-100 text-red-700 rounded text-sm">
+                {formError}
+              </div>
+            )}
             <DialogHeader>
               <DialogTitle>Adicionar Despesa</DialogTitle>
             </DialogHeader>
@@ -312,13 +359,13 @@ export function Expenses() {
                   <Label>Frequência</Label>
                   <Select 
                     value={formData.frequency}
-                    onValueChange={(value: string) => setFormData({ ...formData, frequency: value as 'once' | 'monthly' | 'yearly' })}
+                    onValueChange={(value: string) => setFormData({ ...formData, frequency: value as 'one_time' | 'monthly' | 'yearly' })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="once">Única</SelectItem>
+                      <SelectItem value="one_time">Única</SelectItem>
                       <SelectItem value="monthly">Mensal</SelectItem>
                       <SelectItem value="yearly">Anual</SelectItem>
                     </SelectContent>
@@ -350,7 +397,7 @@ export function Expenses() {
                       amount_cents: 0,
                       amount_cents_display: '',
                       category_id: '',
-                      frequency: 'once',
+                      frequency: 'one_time',
                       due_day: 1,
                     });
                   }}
@@ -360,7 +407,12 @@ export function Expenses() {
                 <Button 
                   className="bg-[#3B82F6] hover:bg-[#2563EB]"
                   onClick={handleCreateExpense}
-                  disabled={!formData.name || !formData.amount_cents || !formData.category_id}
+                  disabled={
+                    !formData.name.trim() ||
+                    !formData.category_id ||
+                    isNaN(formData.amount_cents) ||
+                    formData.amount_cents <= 0
+                  }
                 >
                   {isEditMode ? 'Atualizar Despesa' : 'Salvar Despesa'}
                 </Button>

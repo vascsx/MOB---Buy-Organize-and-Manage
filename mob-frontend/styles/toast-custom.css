@@ -1,0 +1,22 @@
+/* Custom Sonner toast colors for error and success */
+[data-sonner-toast][data-type="error"] {
+  background: var(--mob-red) !important;
+  border-color: var(--mob-red) !important;
+  color: white !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-title],
+[data-sonner-toast][data-type="error"] [data-description] {
+  color: white !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  background: var(--mob-green) !important;
+  border-color: var(--mob-green) !important;
+  color: white !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-title],
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: white !important;
+}
