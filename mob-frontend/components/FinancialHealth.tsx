@@ -24,43 +24,41 @@ export function FinancialHealth({
     return { text: 'Precisa melhorar', color: '#EF4444' };
   };
 
-  const status = getStatusLabel(score);
-  
-  // Calculate proportional points based on actual score
-  const totalMaxPoints = 100;
-  const scoreRatio = score / totalMaxPoints;
-  
-  // Critérios baseados na lógica do backend (total: 100 pontos)
   const indicators = [
     { 
       label: 'Despesas controladas', 
       status: expenseRatio < 50 ? 'good' : expenseRatio < 70 ? 'warning' : 'bad',
       detail: expenseRatio > 0 ? `${expenseRatio.toFixed(0)}% da renda` : 'Sem gastos registrados',
       maxPoints: 30,
-      actualPoints: Math.round(30 * scoreRatio * (expenseRatio === 0 || expenseRatio < 50 ? 1 : expenseRatio < 70 ? 0.5 : 0))
+      actualPoints: expenseRatio === 0 ? 30 : expenseRatio < 50 ? 30 : expenseRatio < 70 ? Math.round(30 * (70 - expenseRatio) / 20) : 0
     },
     { 
       label: 'Possui investimentos', 
       status: hasInvestments ? 'good' : 'bad',
       detail: hasInvestments ? 'Investindo mensalmente' : 'Sem investimentos',
       maxPoints: 25,
-      actualPoints: Math.round(25 * scoreRatio * (hasInvestments ? 1 : 0))
+      actualPoints: hasInvestments ? 25 : 0
     },
     { 
       label: 'Reserva de emergência', 
       status: emergencyProgress >= 100 ? 'good' : emergencyProgress >= 50 ? 'warning' : 'bad',
       detail: emergencyProgress > 0 ? `${emergencyProgress.toFixed(0)}% concluída` : 'Não configurada',
       maxPoints: 25,
-      actualPoints: Math.round(25 * scoreRatio * (emergencyProgress / 100))
+      actualPoints: Math.round(emergencyProgress * 25 / 100)
     },
     { 
       label: 'Saldo positivo', 
       status: hasPositiveBalance ? 'good' : 'bad',
       detail: hasPositiveBalance ? 'Sobra dinheiro' : 'Gastos igualam renda',
       maxPoints: 20,
-      actualPoints: Math.round(20 * scoreRatio * (hasPositiveBalance ? 1 : 0))
+      actualPoints: hasPositiveBalance ? 20 : 0
     },
   ];
+
+  const calculatedScore = indicators.reduce((sum, indicator) => sum + indicator.actualPoints, 0);
+  const finalScore = calculatedScore;
+
+  const status = getStatusLabel(finalScore);
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
@@ -68,7 +66,7 @@ export function FinancialHealth({
       
       <div className="flex items-end gap-4 mb-6">
         <div>
-          <p className="text-5xl font-bold" style={{ color: status.color }}>{score}</p>
+          <p className="text-5xl font-bold" style={{ color: status.color }}>{finalScore}</p>
           <p className="text-sm text-gray-500">de 100</p>
         </div>
         <div className="mb-2">
@@ -82,7 +80,7 @@ export function FinancialHealth({
       </div>
 
       <div className="mb-6">
-        <Progress value={score} className="h-3" />
+        <Progress value={finalScore} className="h-3" />
       </div>
 
       <div className="space-y-3">
