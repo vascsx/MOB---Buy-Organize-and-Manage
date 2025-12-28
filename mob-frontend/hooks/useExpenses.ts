@@ -26,7 +26,7 @@ interface UseExpensesReturn {
   error: string | null;
   fetchCategories: (familyId: number) => Promise<void>;
   fetchExpenses: (familyId: number, filters?: ExpenseFilters) => Promise<void>;
-  fetchSummary: (familyId: number) => Promise<void>;
+  fetchSummary: (familyId: number, month?: string) => Promise<void>;
   fetchCategoryBreakdown: (familyId: number) => Promise<void>;
   fetchExpense: (familyId: number, expenseId: number) => Promise<void>;
   createExpense: (familyId: number, data: CreateExpenseRequest) => Promise<Expense>;
@@ -75,11 +75,11 @@ export const useExpenses = (): UseExpensesReturn => {
     }
   }, []);
 
-  const fetchSummary = useCallback(async (familyId: number) => {
+  const fetchSummary = useCallback(async (familyId: number, month?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await expensesApi.getExpensesSummary(familyId);
+      const data = await expensesApi.getExpensesSummary(familyId, month);
       setSummary(data);
     } catch (err) {
       const message = getErrorMessage(err);

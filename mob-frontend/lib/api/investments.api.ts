@@ -32,10 +32,14 @@ export const investmentsApi = {
 
   /**
    * Buscar resumo de investimentos
+   * @param familyId - ID da família
+   * @param month - Mês no formato YYYY-MM (ex: 2024-03). Opcional.
    */
-  getInvestmentsSummary: async (familyId: number): Promise<InvestmentsSummary> => {
+  getInvestmentsSummary: async (familyId: number, month?: string): Promise<InvestmentsSummary> => {
+    const params = month ? { month } : {};
     const response = await apiClient.get<InvestmentsSummary>(
-      `/families/${familyId}/investments/summary`
+      `/families/${familyId}/investments/summary`,
+      { params }
     );
     return response.data;
   },

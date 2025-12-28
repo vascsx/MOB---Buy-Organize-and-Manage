@@ -339,31 +339,22 @@ func (s *ExpenseService) GetFamilyExpensesSummary(familyID uint, month, year int
 	}
 	
 	// Construir by_category
-	byCategory := []CategorySummary{}
+	byCategory := []CategoryExpense{}
 	if totalMonthly > 0 {
 		for catName, catTotal := range categoryTotals {
-			percentage := (catTotal / totalMonthly) * 100
-			byCategory = append(byCategory, CategorySummary{
+			byCategory = append(byCategory, CategoryExpense{
 				CategoryName: catName,
 				Total:        catTotal,
-				Percentage:   percentage,
+				Count:        1, // TODO: contar despesas por categoria se necessário
 			})
 		}
 	}
 	
 	return &ExpensesSummary{
-		TotalMonthly:   totalMonthly,
-		TotalYearly:    totalMonthly * 12,
-		TotalOnce:      0, // TODO: calcular one_time se necessário
-		FixedCount:     fixedCount,
-		VariableCount:  variableCount,
-		ByCategory:     byCategory,
-	}, nil
-}
-		TotalMonthly:  utils.CentsToFloat(totalMonthly),
+		TotalMonthly:  totalMonthly,
 		FixedCount:    fixedCount,
 		VariableCount: variableCount,
-		ByCategory:    byCategory.Categories,
+		ByCategory:    byCategory,
 	}, nil
 }
 

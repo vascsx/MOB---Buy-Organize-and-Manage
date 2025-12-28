@@ -190,7 +190,7 @@ func (s *InvestmentService) GetInvestmentsSummary(familyID uint, month, year int
 	
 	for _, inv := range investments {
 		totalBalance += inv.CurrentBalanceCents
-		totalMonthly += inv.MonthlyInvestmentCents
+		totalMonthly += inv.MonthlyContributionCents
 		
 		// Agrupar por tipo
 		if _, exists := byTypeMap[inv.Type]; !exists {
@@ -205,7 +205,7 @@ func (s *InvestmentService) GetInvestmentsSummary(familyID uint, month, year int
 		
 		byTypeMap[inv.Type].Count++
 		byTypeMap[inv.Type].TotalBalance += utils.CentsToFloat(inv.CurrentBalanceCents)
-		byTypeMap[inv.Type].TotalMonthly += utils.CentsToFloat(inv.MonthlyInvestmentCents)
+		byTypeMap[inv.Type].TotalMonthly += utils.CentsToFloat(inv.MonthlyContributionCents)
 		byTypeMap[inv.Type].AverageReturnRate += inv.AnnualReturnRate
 	}
 	

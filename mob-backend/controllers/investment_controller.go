@@ -4,6 +4,7 @@ import (
 	"finance-backend/models"
 	"finance-backend/services"
 	"finance-backend/utils"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -84,8 +85,20 @@ func (ctrl *InvestmentController) GetFamilyInvestments(c *gin.Context) {
 // GetInvestmentsSummary retorna resumo dos investimentos
 func (ctrl *InvestmentController) GetInvestmentsSummary(c *gin.Context) {
 	familyID := c.GetUint("family_id")
+	monthParam := c.Query("month") // Formato: YYYY-MM
 	
-	summary, err := ctrl.investmentService.GetInvestmentsSummary(familyID)
+	// Parsear mês/ano do query parameter
+	month, year := 0, 0
+	if monthParam != "" {
+		var parseErr error
+		_, parseErr = fmt.Sscanf(monthParam, "%d-%d", &year, &month)
+		if parseErr != nil || month < 1 || month > 12 || year < 2000 {
+			utils.ErrorResponse(c, 400, "Formato de mês inválido. Use YYYY-MM (ex: 2024-03)")
+			return
+		}
+	}
+	
+	summary, err := ctrl.investmentService.GetInvestmentsSummary(familyID, month, year)
 	if err != nil {
 		utils.InternalErrorResponse(c, "Erro ao calcular resumo")
 		return

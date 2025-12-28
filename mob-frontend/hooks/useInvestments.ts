@@ -23,7 +23,7 @@ interface UseInvestmentsReturn {
   isLoading: boolean;
   error: string | null;
   fetchInvestments: (familyId: number) => Promise<void>;
-  fetchSummary: (familyId: number) => Promise<void>;
+  fetchSummary: (familyId: number, month?: string) => Promise<void>;
   fetchProjections: (familyId: number, months?: number) => Promise<void>;
   fetchInvestment: (familyId: number, investmentId: number) => Promise<void>;
   fetchInvestmentProjection: (familyId: number, investmentId: number, months?: number) => Promise<void>;
@@ -58,11 +58,11 @@ export const useInvestments = (): UseInvestmentsReturn => {
     }
   }, []);
 
-  const fetchSummary = useCallback(async (familyId: number) => {
+  const fetchSummary = useCallback(async (familyId: number, month?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await investmentsApi.getInvestmentsSummary(familyId);
+      const data = await investmentsApi.getInvestmentsSummary(familyId, month);
       setSummary(data);
     } catch (err) {
       const message = getErrorMessage(err);

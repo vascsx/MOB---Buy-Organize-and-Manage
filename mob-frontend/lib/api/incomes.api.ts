@@ -29,9 +29,15 @@ export const incomesApi = {
 
   /**
    * Buscar resumo de rendas
+   * @param familyId - ID da família
+   * @param month - Mês no formato YYYY-MM (ex: 2024-03). Opcional.
    */
-  getIncomeSummary: async (familyId: number): Promise<IncomeSummary> => {
-    const response = await apiClient.get<IncomeSummary>(`/families/${familyId}/incomes/summary`);
+  getIncomeSummary: async (familyId: number, month?: string): Promise<IncomeSummary> => {
+    const params = month ? { month } : {};
+    const response = await apiClient.get<IncomeSummary>(
+      `/families/${familyId}/incomes/summary`,
+      { params }
+    );
     return response.data;
   },
 

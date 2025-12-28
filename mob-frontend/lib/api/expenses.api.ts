@@ -41,10 +41,14 @@ export const expensesApi = {
 
   /**
    * Buscar resumo de despesas
+   * @param familyId - ID da família
+   * @param month - Mês no formato YYYY-MM (ex: 2024-03). Opcional.
    */
-  getExpensesSummary: async (familyId: number): Promise<ExpensesSummary> => {
+  getExpensesSummary: async (familyId: number, month?: string): Promise<ExpensesSummary> => {
+    const params = month ? { month } : {};
     const response = await apiClient.get<ExpensesSummary>(
-      `/families/${familyId}/expenses/summary`
+      `/families/${familyId}/expenses/summary`,
+      { params }
     );
     return response.data;
   },

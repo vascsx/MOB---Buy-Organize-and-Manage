@@ -22,7 +22,7 @@ interface UseIncomesReturn {
   isLoading: boolean;
   error: string | null;
   fetchIncomes: (familyId: number) => Promise<void>;
-  fetchSummary: (familyId: number) => Promise<void>;
+  fetchSummary: (familyId: number, month?: string) => Promise<void>;
   fetchIncome: (familyId: number, incomeId: number) => Promise<void>;
   fetchBreakdown: (familyId: number, incomeId: number) => Promise<void>;
   createIncome: (familyId: number, data: CreateIncomeRequest) => Promise<Income>;
@@ -55,11 +55,11 @@ export const useIncomes = (): UseIncomesReturn => {
     }
   }, []);
 
-  const fetchSummary = useCallback(async (familyId: number) => {
+  const fetchSummary = useCallback(async (familyId: number, month?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await incomesApi.getIncomeSummary(familyId);
+      const data = await incomesApi.getIncomeSummary(familyId, month);
       setSummary(data);
     } catch (err) {
       const message = getErrorMessage(err);

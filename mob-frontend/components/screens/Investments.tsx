@@ -5,6 +5,7 @@ import { Card } from '../ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useInvestments } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
+import { useMonth } from '../../contexts/MonthContext';
 import { formatMoney } from '../../lib/utils/money';
 import { getInvestmentTypeIcon, getInvestmentTypeName } from '../../lib/utils/investment';
 import { AddInvestmentModal } from '../AddInvestmentModal';
@@ -12,6 +13,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function Investments() {
   const { family } = useFamilyContext();
+  const { selectedMonth } = useMonth();
   const {
     investments,
     summary,
@@ -31,10 +33,10 @@ export function Investments() {
   useEffect(() => {
     if (family) {
       fetchInvestments(family.id);
-      fetchSummary(family.id);
+      fetchSummary(family.id, selectedMonth);
       fetchProjections(family.id, parseInt(selectedTab));
     }
-  }, [family]);
+  }, [family, selectedMonth]);
 
   useEffect(() => {
     if (family) {
@@ -128,12 +130,10 @@ export function Investments() {
           <>
             <ResponsiveContainer width="100%" height={320}>
               <AreaChart
-                data={projections.flatMap(p => 
-                  p.monthly_projections.map((mp: { month: string; amount_cents: number }) => ({
-                    month: mp.month,
-                    value: mp.amount_cents / 100,
-                  }))
-                )}
+                data={projections[0].projections.map((mp) => ({
+                  month: mp.month,
+                  value: mp.balance_cents / 100,
+                }))}
               >
                 <defs>
                   <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
@@ -178,13 +178,13 @@ export function Investments() {
           <div className="bg-green-50 rounded-lg p-5 mt-6 border border-green-200">
             <p className="text-xl font-bold text-[#10B981] mb-2">
               💰 Em {parseInt(selectedTab) / 12} ano{parseInt(selectedTab) > 12 ? 's' : ''} você terá:{' '}
-              {formatMoney(projections[projections.length - 1].final_amount_cents)}
+              {formatMoney(projections[0].projections[projections[0].projections.length - 1].balance_cents)}
             </p>
             <p className="text-sm text-gray-700 mb-1">
-              📈 Total investido: {formatMoney(projections[projections.length - 1].total_invested_cents)}
+              📈 Total investido: {formatMoney(projections[0].projections[projections[0].projections.length - 1].total_contributed_cents)}
             </p>
             <p className="text-sm text-[#10B981] font-medium">
-              📈 Ganho líquido: {formatMoney(projections[projections.length - 1].total_return_cents)}
+              📈 Ganho líquido: {formatMoney(projections[0].projections[projections[0].projections.length - 1].total_returns_cents)}
             </p>
           </div>
         )}
@@ -234,7 +234,7 @@ export function Investments() {
             setShowAddModal(false);
             if (family) {
               await fetchInvestments(family.id);
-              await fetchSummary(family.id);
+              await fetchSummary(family.id, selectedMonth);
               await fetchProjections(family.id, parseInt(selectedTab));
             }
           }}

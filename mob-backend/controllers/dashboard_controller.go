@@ -149,9 +149,9 @@ func (ctrl *DashboardController) calculateFinancialHealth(
 func (ctrl *DashboardController) GetFinancialHealth(c *gin.Context) {
 	familyID := c.GetUint("family_id")
 	
-	incomeSummary, _ := ctrl.incomeService.GetFamilyIncomeSummary(familyID)
-	expensesSummary, _ := ctrl.expenseService.GetFamilyExpensesSummary(familyID)
-	investmentsSummary, _ := ctrl.investmentService.GetInvestmentsSummary(familyID)
+	incomeSummary, _ := ctrl.incomeService.GetFamilyIncomeSummary(familyID, 0, 0)
+	expensesSummary, _ := ctrl.expenseService.GetFamilyExpensesSummary(familyID, 0, 0)
+	investmentsSummary, _ := ctrl.investmentService.GetInvestmentsSummary(familyID, 0, 0)
 	emergencyProgress, _ := ctrl.emergencyService.GetEmergencyFundProgress(familyID)
 	
 	score := ctrl.calculateFinancialHealth(incomeSummary, expensesSummary, investmentsSummary, emergencyProgress)

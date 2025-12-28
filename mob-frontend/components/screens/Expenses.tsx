@@ -12,6 +12,7 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 import { useExpenses } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
+import { useMonth } from '../../contexts/MonthContext';
 import { useToast } from '../../hooks/useToast';
 import { formatMoney, formatPercentage } from '../../lib/utils/money';
 import { getErrorMessage } from '../../lib/api/client';
@@ -31,6 +32,7 @@ const STATIC_CATEGORIES = [
 
 export function Expenses() {
   const { family, members, fetchMembers } = useFamilyContext();
+  const { selectedMonth } = useMonth();
   const {
     expenses,
     summary,
@@ -50,7 +52,6 @@ export function Expenses() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7));
   
   // Form state
   const [formData, setFormData] = useState<{
@@ -75,7 +76,7 @@ export function Expenses() {
   useEffect(() => {
     if (family) {
       fetchExpenses(family.id);
-      fetchSummary(family.id);
+      fetchSummary(family.id, selectedMonth);
       fetchCategoryBreakdown(family.id);
     }
   }, [family, selectedMonth]);
@@ -184,7 +185,7 @@ export function Expenses() {
       });
       // Refresh data
       fetchExpenses(family.id);
-      fetchSummary(family.id);
+      fetchSummary(family.id, selectedMonth);
       fetchCategoryBreakdown(family.id);
       
       toast.success('Sucesso!', { description: isEditMode ? 'Despesa atualizada' : 'Despesa criada' });
@@ -204,7 +205,7 @@ export function Expenses() {
       try {
         await deleteExpense(family.id, id);
         fetchExpenses(family.id);
-        fetchSummary(family.id);
+        fetchSummary(family.id, selectedMonth);
         fetchCategoryBreakdown(family.id);
       } catch (err) {
         console.error('Failed to delete expense:', err);

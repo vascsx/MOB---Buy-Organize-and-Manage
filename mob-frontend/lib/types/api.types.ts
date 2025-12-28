@@ -247,6 +247,46 @@ export interface CreateInvestmentRequest {
   start_date?: string;
 }
 
+// ===== INVESTMENT PROJECTION =====
+export interface InvestmentProjection {
+  investment_id?: number;
+  name?: string;
+  type?: InvestmentType;
+  monthly_contribution?: number; // em reais
+  current_balance?: number; // em reais
+  annual_return_rate?: number;
+  projections: Array<{
+    month: number;
+    balance_cents: number;
+    total_contributed_cents: number;
+    total_returns_cents: number;
+    balance: number;
+  }>;
+  summary?: {
+    one_year?: {
+      month: number;
+      balance_cents: number;
+      total_contributed_cents: number;
+      total_returns_cents: number;
+      balance: number;
+    };
+    three_years?: {
+      month: number;
+      balance_cents: number;
+      total_contributed_cents: number;
+      total_returns_cents: number;
+      balance: number;
+    };
+    five_years?: {
+      month: number;
+      balance_cents: number;
+      total_contributed_cents: number;
+      total_returns_cents: number;
+      balance: number;
+    };
+  };
+}
+
 // ===== EMERGENCY FUND =====
 
 export interface EmergencyFund {
