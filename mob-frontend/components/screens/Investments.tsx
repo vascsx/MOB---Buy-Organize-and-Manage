@@ -32,7 +32,7 @@ export function Investments() {
 
   useEffect(() => {
     if (family) {
-      fetchInvestments(family.id);
+      fetchInvestments(family.id, selectedMonth);
       fetchSummary(family.id, selectedMonth);
       fetchProjections(family.id, parseInt(selectedTab));
     }
@@ -233,7 +233,7 @@ export function Investments() {
           onSuccess={async () => {
             setShowAddModal(false);
             if (family) {
-              await fetchInvestments(family.id);
+              await fetchInvestments(family.id, selectedMonth);
               await fetchSummary(family.id, selectedMonth);
               await fetchProjections(family.id, parseInt(selectedTab));
             }

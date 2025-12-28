@@ -75,9 +75,9 @@ export function Expenses() {
 
   useEffect(() => {
     if (family) {
-      fetchExpenses(family.id);
+      fetchExpenses(family.id, selectedMonth);
       fetchSummary(family.id, selectedMonth);
-      fetchCategoryBreakdown(family.id);
+      fetchCategoryBreakdown(family.id, selectedMonth);
     }
   }, [family, selectedMonth]);
 
@@ -183,10 +183,10 @@ export function Expenses() {
         frequency: 'one_time' as const,
         due_day: 1,
       });
-      // Refresh data
-      fetchExpenses(family.id);
-      fetchSummary(family.id, selectedMonth);
-      fetchCategoryBreakdown(family.id);
+        // Refresh data
+        fetchExpenses(family.id, selectedMonth);
+        fetchSummary(family.id, selectedMonth);
+        fetchCategoryBreakdown(family.id, selectedMonth);
       
       toast.success('Sucesso!', { description: isEditMode ? 'Despesa atualizada' : 'Despesa criada' });
     } catch (err: any) {
@@ -204,9 +204,9 @@ export function Expenses() {
     if (confirm('Tem certeza que deseja excluir esta despesa?')) {
       try {
         await deleteExpense(family.id, id);
-        fetchExpenses(family.id);
+        fetchExpenses(family.id, selectedMonth);
         fetchSummary(family.id, selectedMonth);
-        fetchCategoryBreakdown(family.id);
+        fetchCategoryBreakdown(family.id, selectedMonth);
       } catch (err) {
         console.error('Failed to delete expense:', err);
         toast.error('Erro ao excluir despesa', { description: 'Não foi possível excluir a despesa' });

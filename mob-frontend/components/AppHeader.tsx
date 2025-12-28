@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bell, ChevronDown, Menu, LogOut, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, ChevronDown, Menu, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { useAuth } from '../hooks/useAuth';
 import { useMonth } from '../contexts/MonthContext';
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -26,6 +27,8 @@ interface HeaderProps {
 export function AppHeader({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const { selectedMonth, setSelectedMonth } = useMonth();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Gerar últimos 12 meses
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -99,15 +102,9 @@ export function AppHeader({ onMenuClick }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">{user?.name || 'Usuário'}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
+                <p className="text-sm font-medium">{user?.email}</p>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="w-4 h-4 mr-2" />
-              Perfil
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="text-red-600">
               <LogOut className="w-4 h-4 mr-2" />

@@ -22,7 +22,7 @@ interface UseInvestmentsReturn {
   selectedProjection: InvestmentProjection | null;
   isLoading: boolean;
   error: string | null;
-  fetchInvestments: (familyId: number) => Promise<void>;
+  fetchInvestments: (familyId: number, month?: string) => Promise<void>;
   fetchSummary: (familyId: number, month?: string) => Promise<void>;
   fetchProjections: (familyId: number, months?: number) => Promise<void>;
   fetchInvestment: (familyId: number, investmentId: number) => Promise<void>;
@@ -43,11 +43,11 @@ export const useInvestments = (): UseInvestmentsReturn => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchInvestments = useCallback(async (familyId: number) => {
+  const fetchInvestments = useCallback(async (familyId: number, month?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await investmentsApi.getFamilyInvestments(familyId);
+      const data = await investmentsApi.getFamilyInvestments(familyId, month);
       setInvestments(data);
     } catch (err) {
       const message = getErrorMessage(err);

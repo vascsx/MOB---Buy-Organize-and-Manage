@@ -63,6 +63,11 @@ func (s *InvestmentService) GetInvestmentsByFamilyID(familyID uint) ([]models.In
 	return s.investmentRepo.GetByFamilyID(familyID)
 }
 
+// GetInvestmentsByFamilyIDAndMonth busca investimentos de uma família filtrados por mês
+func (s *InvestmentService) GetInvestmentsByFamilyIDAndMonth(familyID uint, month, year int) ([]models.Investment, error) {
+	return s.investmentRepo.GetByFamilyIDAndMonth(familyID, month, year)
+}
+
 // DeleteInvestment desativa um investimento
 func (s *InvestmentService) DeleteInvestment(id uint) error {
 	return s.investmentRepo.Delete(id)

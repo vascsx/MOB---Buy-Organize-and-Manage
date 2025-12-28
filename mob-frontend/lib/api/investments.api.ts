@@ -24,9 +24,12 @@ export const investmentsApi = {
 
   /**
    * Buscar investimentos da família
+   * @param familyId - ID da família
+   * @param month - Mês no formato YYYY-MM (ex: 2024-03). Opcional.
    */
-  getFamilyInvestments: async (familyId: number): Promise<Investment[]> => {
-    const response = await apiClient.get<Investment[]>(`/families/${familyId}/investments`);
+  getFamilyInvestments: async (familyId: number, month?: string): Promise<Investment[]> => {
+    const params = month ? { month } : {};
+    const response = await apiClient.get<Investment[]>(`/families/${familyId}/investments`, { params });
     return response.data;
   },
 

@@ -80,8 +80,28 @@ func (ctrl *ExpenseController) GetExpense(c *gin.Context) {
 // GetFamilyExpenses busca despesas de uma família
 func (ctrl *ExpenseController) GetFamilyExpenses(c *gin.Context) {
 	familyID := c.GetUint("family_id")
+	monthParam := c.Query("month") // Formato: YYYY-MM
 	
-	expenses, err := ctrl.expenseService.GetExpensesByFamilyID(familyID)
+	// Parsear mês/ano do query parameter
+	month, year := 0, 0
+	if monthParam != "" {
+		var parseErr error
+		_, parseErr = fmt.Sscanf(monthParam, "%d-%d", &year, &month)
+		if parseErr != nil || month < 1 || month > 12 || year < 2000 {
+			utils.ErrorResponse(c, 400, "Formato de mês inválido. Use YYYY-MM (ex: 2024-03)")
+			return
+		}
+	}
+	
+	var expenses []models.Expense
+	var err error
+	if month > 0 && year > 0 {
+		// Quando há filtro de mês, usar o repositório diretamente
+		expenses, err = ctrl.expenseService.GetExpensesByFamilyIDAndMonth(familyID, month, year)
+	} else {
+		expenses, err = ctrl.expenseService.GetExpensesByFamilyID(familyID)
+	}
+	
 	if err != nil {
 		utils.InternalErrorResponse(c, "Erro ao buscar despesas")
 		return
@@ -93,8 +113,20 @@ func (ctrl *ExpenseController) GetFamilyExpenses(c *gin.Context) {
 // GetExpensesByCategory retorna despesas agrupadas por categoria
 func (ctrl *ExpenseController) GetExpensesByCategory(c *gin.Context) {
 	familyID := c.GetUint("family_id")
+	monthParam := c.Query("month") // Formato: YYYY-MM
 	
-	result, err := ctrl.expenseService.GetExpensesByCategory(familyID)
+	// Parsear mês/ano do query parameter
+	month, year := 0, 0
+	if monthParam != "" {
+		var parseErr error
+		_, parseErr = fmt.Sscanf(monthParam, "%d-%d", &year, &month)
+		if parseErr != nil || month < 1 || month > 12 || year < 2000 {
+			utils.ErrorResponse(c, 400, "Formato de mês inválido. Use YYYY-MM (ex: 2024-03)")
+			return
+		}
+	}
+	
+	result, err := ctrl.expenseService.GetExpensesByCategory(familyID, month, year)
 	if err != nil {
 		utils.InternalErrorResponse(c, "Erro ao agrupar despesas")
 		return

@@ -31,10 +31,14 @@ export const expensesApi = {
 
   /**
    * Buscar despesas da família
+   * @param familyId - ID da família
+   * @param month - Mês no formato YYYY-MM (ex: 2024-03). Opcional.
+   * @param filters - Filtros adicionais
    */
-  getFamilyExpenses: async (familyId: number, filters?: ExpenseFilters): Promise<Expense[]> => {
+  getFamilyExpenses: async (familyId: number, month?: string, filters?: ExpenseFilters): Promise<Expense[]> => {
+    const params = { ...filters, ...(month ? { month } : {}) };
     const response = await apiClient.get<Expense[]>(`/families/${familyId}/expenses`, {
-      params: filters,
+      params,
     });
     return response.data;
   },
@@ -55,10 +59,14 @@ export const expensesApi = {
 
   /**
    * Buscar despesas por categoria
+   * @param familyId - ID da família
+   * @param month - Mês no formato YYYY-MM (ex: 2024-03). Opcional.
    */
-  getExpensesByCategory: async (familyId: number): Promise<CategorySummary[]> => {
+  getExpensesByCategory: async (familyId: number, month?: string): Promise<CategorySummary[]> => {
+    const params = month ? { month } : {};
     const response = await apiClient.get<{ categories: CategorySummary[]; total_amount: number }>(
-      `/families/${familyId}/expenses/by-category`
+      `/families/${familyId}/expenses/by-category`,
+      { params }
     );
     const { categories, total_amount } = response.data;
     // Calcular percentagem para cada categoria

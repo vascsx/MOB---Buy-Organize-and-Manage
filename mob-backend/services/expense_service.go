@@ -212,33 +212,61 @@ func (s *ExpenseService) GetExpensesByFamilyID(familyID uint) ([]models.Expense,
 	return s.expenseRepo.GetByFamilyID(familyID)
 }
 
+// GetExpensesByFamilyIDAndMonth busca despesas de uma família filtradas por mês
+func (s *ExpenseService) GetExpensesByFamilyIDAndMonth(familyID uint, month, year int) ([]models.Expense, error) {
+	return s.expenseRepo.GetByFamilyIDAndMonth(familyID, month, year)
+}
+
 // DeleteExpense desativa uma despesa
 func (s *ExpenseService) DeleteExpense(id uint) error {
 	return s.expenseRepo.Delete(id)
 }
 
 // GetExpensesByCategory retorna despesas agrupadas por categoria
-func (s *ExpenseService) GetExpensesByCategory(familyID uint) (*ExpenseByCategoryResponse, error) {
-	results, err := s.expenseRepo.GetExpensesByCategory(familyID)
+// Se month e year forem fornecidos (> 0), filtra por mês específico
+func (s *ExpenseService) GetExpensesByCategory(familyID uint, month, year int) (*ExpenseByCategoryResponse, error) {
+	var expenses []models.Expense
+	var err error
+	
+	// Se month e year forem fornecidos, buscar por mês específico
+	if month > 0 && year > 0 {
+		expenses, err = s.expenseRepo.GetByFamilyIDAndMonth(familyID, month, year)
+	} else {
+		expenses, err = s.expenseRepo.GetByFamilyID(familyID)
+	}
+	
 	if err != nil {
 		return nil, err
 	}
 	
-	categories := []CategoryExpense{}
+	// Agrupar por categoria manualmente
+	categoryMap := make(map[uint]*CategoryExpense)
 	totalCents := int64(0)
 	
-	for _, result := range results {
-		categories = append(categories, CategoryExpense{
-			CategoryID:   result.CategoryID,
-			CategoryName: result.CategoryName,
-			Total:        utils.CentsToFloat(result.TotalCents),
-			Count:        int(result.Count),
-		})
-		totalCents += result.TotalCents
+	for _, expense := range expenses {
+		totalCents += expense.AmountCents
+		
+		catID := expense.CategoryID
+		if _, exists := categoryMap[catID]; !exists {
+			categoryMap[catID] = &CategoryExpense{
+				CategoryID:   catID,
+				CategoryName: expense.Category.Name,
+				Total:        0,
+				Count:        0,
+			}
+		}
+		
+		categoryMap[catID].Total += utils.CentsToFloat(expense.AmountCents)
+		categoryMap[catID].Count++
+	}
+	
+	categories := []CategoryExpense{}
+	for _, cat := range categoryMap {
+		categories = append(categories, *cat)
 	}
 	
 	return &ExpenseByCategoryResponse{
-		Categories: categories,
+		Categories:  categories,
 		TotalAmount: utils.CentsToFloat(totalCents),
 	}, nil
 }
