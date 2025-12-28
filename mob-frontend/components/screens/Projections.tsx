@@ -75,9 +75,9 @@ export function Projections() {
               tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              formatter={(value: number | undefined, name: string) => [
+              formatter={(value: number | undefined, name?: string) => [
                 `R$ ${(value || 0).toLocaleString()}`,
-                name === 'reserve' ? 'Reserva' : 'Investimentos',
+                name === 'reserve' ? 'Reserva' : name === 'investments' ? 'Investimentos' : (name || ''),
               ]}
               contentStyle={{
                 backgroundColor: 'white',

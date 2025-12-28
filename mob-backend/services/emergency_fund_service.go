@@ -83,40 +83,33 @@ func (s *EmergencyFundService) CreateOrUpdateEmergencyFund(familyID uint, target
 }
 
 // UpdateCurrentAmount atualiza o valor atual da reserva
-func (s *EmergencyFundService) UpdateCurrentAmount(familyID uint, newAmountCents int64) error {
+func (s *EmergencyFundService) UpdateCurrentAmount(familyID uint, newAmount float64) error {
 	validator := utils.NewValidator()
-	validator.Add(utils.ValidateNonNegativeAmount(newAmountCents, "current_amount_cents"))
-	
+	validator.Add(utils.ValidatePositiveFloat(newAmount, "current_amount"))
 	if validator.HasErrors() {
 		return validator.GetErrors()
 	}
-	
 	fund, err := s.emergencyRepo.GetByFamilyID(familyID)
 	if err != nil {
 		return err
 	}
-	
-	fund.CurrentAmountCents = newAmountCents
+	fund.CurrentAmount = newAmount
 	s.calculateEstimatedMonths(fund)
-	
 	return s.emergencyRepo.Update(fund)
 }
 
 // calculateEstimatedMonths calcula os meses necessários para atingir a meta
 func (s *EmergencyFundService) calculateEstimatedMonths(fund *models.EmergencyFund) {
-	remaining := fund.TargetAmountCents - fund.CurrentAmountCents
-	
+	remaining := fund.TargetAmount - fund.CurrentAmount
 	if remaining <= 0 {
 		fund.EstimatedMonths = 0
 		return
 	}
-	
-	if fund.MonthlyGoalCents <= 0 {
+	if fund.MonthlyGoal <= 0 {
 		fund.EstimatedMonths = 999 // Valor alto para indicar impossível
 		return
 	}
-	
-	fund.EstimatedMonths = int((remaining + fund.MonthlyGoalCents - 1) / fund.MonthlyGoalCents) // Arredondar para cima
+	fund.EstimatedMonths = int((remaining + fund.MonthlyGoal - 1) / fund.MonthlyGoal) // Arredondar para cima
 }
 
 // GetEmergencyFund busca a reserva de emergência
@@ -131,29 +124,19 @@ func (s *EmergencyFundService) GetEmergencyFundProgress(familyID uint) (*Emergen
 		return nil, err
 	}
 	
-	// Calcular despesas mensais
-	monthlyExpenses, err := s.expenseRepo.CalculateTotalMonthlyExpenses(familyID)
-	if err != nil {
-		return nil, err
-	}
+	   // (Removido: cálculo de monthlyExpenses não é mais necessário)
 	
-	goal := calculation.CalculateEmergencyFundGoal(
-		fund.TargetMonths,
-		monthlyExpenses,
-		fund.CurrentAmountCents,
-		fund.MonthlyGoalCents,
-	)
-	
+	// Aqui, use os próprios campos do fund, pois já estão em reais
 	return &EmergencyFundProgress{
-		TargetMonths:       goal.TargetMonths,
-		MonthlyExpenses:    utils.CentsToFloat(goal.MonthlyExpenses),
-		TargetAmount:       utils.CentsToFloat(goal.TargetAmount),
-		CurrentAmount:      utils.CentsToFloat(goal.CurrentAmount),
-		RemainingAmount:    utils.CentsToFloat(goal.RemainingAmount),
-		MonthlyGoal:        utils.CentsToFloat(goal.MonthlyGoal),
-		EstimatedMonths:    goal.EstimatedMonths,
-		CompletionPercent:  goal.CompletionPercent,
-		IsComplete:         goal.CompletionPercent >= 100,
+		TargetMonths:      fund.TargetMonths,
+		MonthlyExpenses:   fund.MonthlyExpenses,
+		TargetAmount:      fund.TargetAmount,
+		CurrentAmount:     fund.CurrentAmount,
+		RemainingAmount:   fund.TargetAmount - fund.CurrentAmount,
+		MonthlyGoal:       fund.MonthlyGoal,
+		EstimatedMonths:   fund.EstimatedMonths,
+		CompletionPercent: (fund.CurrentAmount / fund.TargetAmount) * 100,
+		IsComplete:        fund.CurrentAmount >= fund.TargetAmount,
 	}, nil
 }
 
@@ -205,26 +188,20 @@ func (s *EmergencyFundService) GetEmergencyFundProjection(familyID uint, months 
 		return nil, err
 	}
 	
-	projection := calculation.CalculateEmergencyFundProjection(
-		fund.CurrentAmountCents,
-		fund.MonthlyGoalCents,
-		fund.TargetAmountCents,
-		months,
-	)
-	
+	// Projeção simplificada: apenas valores reais atuais
 	details := []EmergencyFundProjectionDetail{}
-	for _, p := range projection {
+	for i := 1; i <= months; i++ {
+		balance := fund.CurrentAmount + float64(i)*fund.MonthlyGoal
 		details = append(details, EmergencyFundProjectionDetail{
-			Month:      p.Month,
-			Balance:    utils.CentsToFloat(p.Balance),
-			IsComplete: p.IsComplete,
+			Month:      i,
+			Balance:    balance,
+			IsComplete: balance >= fund.TargetAmount,
 		})
 	}
-	
 	return &EmergencyFundProjectionResponse{
-		CurrentAmount:  utils.CentsToFloat(fund.CurrentAmountCents),
-		TargetAmount:   utils.CentsToFloat(fund.TargetAmountCents),
-		MonthlyGoal:    utils.CentsToFloat(fund.MonthlyGoalCents),
+		CurrentAmount:  fund.CurrentAmount,
+		TargetAmount:   fund.TargetAmount,
+		MonthlyGoal:    fund.MonthlyGoal,
 		MonthsToGoal:   fund.EstimatedMonths,
 		Projection:     details,
 	}, nil

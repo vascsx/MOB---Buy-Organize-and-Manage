@@ -1,4 +1,6 @@
+
 package utils
+
 
 import (
 	"fmt"
@@ -28,6 +30,17 @@ func (e ValidationErrors) Error() string {
 // HasErrors verifica se há erros
 func (e ValidationErrors) HasErrors() bool {
 	return len(e) > 0
+}
+
+// ValidatePositiveFloat valida se um valor float64 é positivo
+func ValidatePositiveFloat(value float64, fieldName string) error {
+	if value <= 0 {
+		return ValidationError{
+			Field:   fieldName,
+			Message: "deve ser um valor positivo",
+		}
+	}
+	return nil
 }
 
 // ValidatePositiveAmount valida se um valor é positivo

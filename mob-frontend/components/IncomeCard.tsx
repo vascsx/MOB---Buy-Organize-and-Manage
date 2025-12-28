@@ -13,12 +13,8 @@ export function IncomeCard({ totalNet, totalGross, totalTax }: IncomeCardProps) 
       <h2 className="text-xl mb-4">💰 Renda Líquida da Família</h2>
       <div className="space-y-2">
         <div>
-          <p className="text-4xl font-bold text-gray-900">{formatMoney(totalNet)}</p>
-          <span className="text-gray-600 text-sm"> / mês</span>
+          <p className="text-4xl font-bold text-gray-900">{formatMoney(totalNet)} <span className="text-gray-600 text-sm"> / mês</span></p>
         </div>
-        <p className="text-sm text-gray-600">
-          {formatMoney(totalGross)} bruto – {formatMoney(totalTax)} impostos
-        </p>
       </div>
     </div>
   );
