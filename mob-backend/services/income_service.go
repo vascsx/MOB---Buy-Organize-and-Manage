@@ -195,8 +195,19 @@ type IncomeBreakdown struct {
 }
 
 // GetFamilyIncomeSummary retorna resumo de todas as rendas da família
-func (s *IncomeService) GetFamilyIncomeSummary(familyID uint) (*FamilyIncomeSummary, error) {
-	incomes, err := s.incomeRepo.GetByFamilyID(familyID)
+// Se month e year forem fornecidos (> 0), filtra por mês específico
+func (s *IncomeService) GetFamilyIncomeSummary(familyID uint, month, year int) (*FamilyIncomeSummary, error) {
+	var incomes []models.Income
+	var err error
+	
+	// Se month e year forem fornecidos, buscar por mês específico
+	if month > 0 && year > 0 {
+		incomes, err = s.incomeRepo.GetByFamilyIDAndMonth(familyID, month, year)
+	} else {
+		// Caso contrário, buscar todos
+		incomes, err = s.incomeRepo.GetByFamilyID(familyID)
+	}
+	
 	if err != nil {
 		return nil, err
 	}

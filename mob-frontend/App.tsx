@@ -11,6 +11,7 @@ import { AppHeader } from './components/AppHeader';
 import { AppSidebar } from './components/AppSidebar';
 import { MobileNav } from './components/MobileNav';
 import { useFamilyContext } from './contexts/FamilyContext';
+import { MonthProvider } from './contexts/MonthContext';
 import { Skeleton } from './components/ui/skeleton';
 
 export default function App() {
@@ -72,31 +73,33 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <AppSidebar 
-        activeItem={activeMenuItem} 
-        onItemClick={setActiveMenuItem} 
-      />
-
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <AppHeader onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
-
-        {/* Content */}
-        <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
-          <div className="max-w-7xl mx-auto">
-            {renderScreen()}
-          </div>
-        </main>
-
-        {/* Mobile Navigation */}
-        <MobileNav 
+    <MonthProvider>
+      <div className="min-h-screen bg-gray-50 flex">
+        {/* Sidebar */}
+        <AppSidebar 
           activeItem={activeMenuItem} 
           onItemClick={setActiveMenuItem} 
         />
+
+        {/* Main content */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <AppHeader onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+
+          {/* Content */}
+          <main className="flex-1 p-4 lg:p-6 pb-20 lg:pb-6">
+            <div className="max-w-7xl mx-auto">
+              {renderScreen()}
+            </div>
+          </main>
+
+          {/* Mobile Navigation */}
+          <MobileNav 
+            activeItem={activeMenuItem} 
+            onItemClick={setActiveMenuItem} 
+          />
+        </div>
       </div>
-    </div>
+    </MonthProvider>
   );
 }

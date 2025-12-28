@@ -300,34 +300,66 @@ type MemberExpenseDetail struct {
 }
 
 // GetFamilyExpensesSummary retorna resumo completo das despesas
-func (s *ExpenseService) GetFamilyExpensesSummary(familyID uint) (*ExpensesSummary, error) {
-	totalMonthly, err := s.expenseRepo.CalculateTotalMonthlyExpenses(familyID)
+// Se month e year forem fornecidos (> 0), filtra por mês específico
+func (s *ExpenseService) GetFamilyExpensesSummary(familyID uint, month, year int) (*ExpensesSummary, error) {
+	var expenses []models.Expense
+	var err error
+	
+	// Se month e year forem fornecidos, buscar por mês específico
+	if month > 0 && year > 0 {
+		expenses, err = s.expenseRepo.GetByFamilyIDAndMonth(familyID, month, year)
+	} else {
+		expenses, err = s.expenseRepo.GetByFamilyID(familyID)
+	}
+	
 	if err != nil {
 		return nil, err
 	}
 	
-	byCategory, err := s.GetExpensesByCategory(familyID)
-	if err != nil {
-		return nil, err
-	}
-	
-	expenses, err := s.expenseRepo.GetByFamilyID(familyID)
-	if err != nil {
-		return nil, err
-	}
-	
+	// Calcular totais
+	totalMonthly := 0.0
 	fixedCount := 0
 	variableCount := 0
+	categoryTotals := make(map[string]float64)
 	
 	for _, exp := range expenses {
+		amountFloat := float64(exp.AmountCents) / 100.0
+		totalMonthly += amountFloat
+		
 		if exp.IsFixed {
 			fixedCount++
 		} else {
 			variableCount++
 		}
+		
+		// Agrupar por categoria
+		if exp.Category.Name != "" {
+			categoryTotals[exp.Category.Name] += amountFloat
+		}
+	}
+	
+	// Construir by_category
+	byCategory := []CategorySummary{}
+	if totalMonthly > 0 {
+		for catName, catTotal := range categoryTotals {
+			percentage := (catTotal / totalMonthly) * 100
+			byCategory = append(byCategory, CategorySummary{
+				CategoryName: catName,
+				Total:        catTotal,
+				Percentage:   percentage,
+			})
+		}
 	}
 	
 	return &ExpensesSummary{
+		TotalMonthly:   totalMonthly,
+		TotalYearly:    totalMonthly * 12,
+		TotalOnce:      0, // TODO: calcular one_time se necessário
+		FixedCount:     fixedCount,
+		VariableCount:  variableCount,
+		ByCategory:     byCategory,
+	}, nil
+}
 		TotalMonthly:  utils.CentsToFloat(totalMonthly),
 		FixedCount:    fixedCount,
 		VariableCount: variableCount,

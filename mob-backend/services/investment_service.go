@@ -167,31 +167,55 @@ func (s *InvestmentService) GetFamilyInvestmentsProjection(familyID uint, years 
 }
 
 // GetInvestmentsSummary retorna resumo dos investimentos
-func (s *InvestmentService) GetInvestmentsSummary(familyID uint) (*InvestmentsSummaryResponse, error) {
-	totalBalance, err := s.investmentRepo.CalculateTotalBalance(familyID)
+// Se month e year forem fornecidos (> 0), filtra por mês específico
+func (s *InvestmentService) GetInvestmentsSummary(familyID uint, month, year int) (*InvestmentsSummaryResponse, error) {
+	var investments []models.Investment
+	var err error
+	
+	// Se month e year forem fornecidos, buscar por mês específico
+	if month > 0 && year > 0 {
+		investments, err = s.investmentRepo.GetByFamilyIDAndMonth(familyID, month, year)
+	} else {
+		investments, err = s.investmentRepo.GetByFamilyID(familyID)
+	}
+	
 	if err != nil {
 		return nil, err
 	}
 	
-	totalMonthly, err := s.investmentRepo.CalculateTotalInvestments(familyID)
-	if err != nil {
-		return nil, err
+	// Calcular totais
+	totalBalance := int64(0)
+	totalMonthly := int64(0)
+	byTypeMap := make(map[models.InvestmentType]*InvestmentByType)
+	
+	for _, inv := range investments {
+		totalBalance += inv.CurrentBalanceCents
+		totalMonthly += inv.MonthlyInvestmentCents
+		
+		// Agrupar por tipo
+		if _, exists := byTypeMap[inv.Type]; !exists {
+			byTypeMap[inv.Type] = &InvestmentByType{
+				Type:              string(inv.Type),
+				Count:             0,
+				TotalBalance:      0,
+				TotalMonthly:      0,
+				AverageReturnRate: 0,
+			}
+		}
+		
+		byTypeMap[inv.Type].Count++
+		byTypeMap[inv.Type].TotalBalance += utils.CentsToFloat(inv.CurrentBalanceCents)
+		byTypeMap[inv.Type].TotalMonthly += utils.CentsToFloat(inv.MonthlyInvestmentCents)
+		byTypeMap[inv.Type].AverageReturnRate += inv.AnnualReturnRate
 	}
 	
-	summary, err := s.investmentRepo.GetInvestmentsSummary(familyID)
-	if err != nil {
-		return nil, err
-	}
-	
+	// Calcular média de retorno
 	byType := []InvestmentByType{}
-	for _, s := range summary {
-		byType = append(byType, InvestmentByType{
-			Type:              string(s.Type),
-			Count:             int(s.Count),
-			TotalBalance:      utils.CentsToFloat(s.TotalBalanceCents),
-			TotalMonthly:      utils.CentsToFloat(s.TotalMonthlyCents),
-			AverageReturnRate: s.AverageReturnRate,
-		})
+	for _, bt := range byTypeMap {
+		if bt.Count > 0 {
+			bt.AverageReturnRate = bt.AverageReturnRate / float64(bt.Count)
+		}
+		byType = append(byType, *bt)
 	}
 	
 	return &InvestmentsSummaryResponse{

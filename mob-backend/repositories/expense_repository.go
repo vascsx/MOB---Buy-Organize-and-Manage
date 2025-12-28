@@ -53,6 +53,24 @@ func (r *ExpenseRepository) GetByFamilyID(familyID uint) ([]models.Expense, erro
 	return expenses, err
 }
 
+// GetByFamilyIDAndMonth busca despesas de uma família filtradas por mês/ano
+func (r *ExpenseRepository) GetByFamilyIDAndMonth(familyID uint, month, year int) ([]models.Expense, error) {
+	var expenses []models.Expense
+	err := r.db.Where("family_account_id = ? AND is_active = ? AND reference_month = ? AND reference_year = ?", 
+		familyID, true, month, year).
+		Preload("Category").
+		Preload("Splits", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "expense_id", "family_member_id", "percentage", "amount_cents")
+		}).
+		Preload("Splits.FamilyMember", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "family_account_id")
+		}).
+		Order("name").
+		Find(&expenses).Error
+	
+	return expenses, err
+}
+
 // GetByFamilyIDWithCategory busca despesas de uma família filtradas por categoria
 func (r *ExpenseRepository) GetByFamilyIDWithCategory(familyID, categoryID uint) ([]models.Expense, error) {
 	var expenses []models.Expense

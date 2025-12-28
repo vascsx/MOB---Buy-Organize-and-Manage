@@ -38,6 +38,17 @@ func (r *InvestmentRepository) GetByFamilyID(familyID uint) ([]models.Investment
 	return investments, err
 }
 
+// GetByFamilyIDAndMonth busca investimentos de uma família filtrados por mês/ano
+func (r *InvestmentRepository) GetByFamilyIDAndMonth(familyID uint, month, year int) ([]models.Investment, error) {
+	var investments []models.Investment
+	err := r.db.Where("family_account_id = ? AND is_active = ? AND reference_month = ? AND reference_year = ?", 
+		familyID, true, month, year).
+		Order("name").
+		Find(&investments).Error
+	
+	return investments, err
+}
+
 // GetByFamilyIDAndType busca investimentos de uma família por tipo
 func (r *InvestmentRepository) GetByFamilyIDAndType(familyID uint, investmentType models.InvestmentType) ([]models.Investment, error) {
 	var investments []models.Investment

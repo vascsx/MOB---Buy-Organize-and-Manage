@@ -24,6 +24,10 @@ type Investment struct {
 	IsActive                 bool           `gorm:"default:true" json:"is_active"`
 	CreatedAt                time.Time      `json:"created_at"`
 	UpdatedAt                time.Time      `json:"updated_at"`
+	
+	// Campos de referência mensal para histórico
+	ReferenceMonth int `gorm:"not null;default:EXTRACT(MONTH FROM CURRENT_DATE)" json:"reference_month"`
+	ReferenceYear  int `gorm:"not null;default:EXTRACT(YEAR FROM CURRENT_DATE)" json:"reference_year"`
 
 	// Relacionamentos
 	FamilyAccount FamilyAccount `gorm:"foreignKey:FamilyAccountID" json:"family_account,omitempty"`

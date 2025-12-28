@@ -61,6 +61,21 @@ func (r *IncomeRepository) GetByFamilyID(familyID uint) ([]models.Income, error)
 	return incomes, err
 }
 
+// GetByFamilyIDAndMonth busca rendas de uma família filtradas por mês/ano
+func (r *IncomeRepository) GetByFamilyIDAndMonth(familyID uint, month, year int) ([]models.Income, error) {
+	var incomes []models.Income
+	err := r.db.Joins("JOIN family_members ON family_members.id = incomes.family_member_id").
+		Where("family_members.family_account_id = ? AND incomes.is_active = ? AND incomes.reference_month = ? AND incomes.reference_year = ?", 
+			familyID, true, month, year).
+		Preload("FamilyMember", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "family_account_id", "role")
+		}).
+		Select("incomes.*").
+		Find(&incomes).Error
+	
+	return incomes, err
+}
+
 // Update atualiza uma renda
 func (r *IncomeRepository) Update(income *models.Income) error {
 	return r.db.Save(income).Error

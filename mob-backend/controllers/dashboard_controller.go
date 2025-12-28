@@ -3,6 +3,7 @@ package controllers
 import (
 	"finance-backend/services"
 	"finance-backend/utils"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,11 +32,24 @@ func NewDashboardController(
 // GetDashboard retorna visão consolidada da família
 func (ctrl *DashboardController) GetDashboard(c *gin.Context) {
 	familyID := c.GetUint("family_id")
+	monthParam := c.Query("month") // Formato: YYYY-MM
 	
-	// Buscar resumos
-	incomeSummary, _ := ctrl.incomeService.GetFamilyIncomeSummary(familyID)
-	expensesSummary, _ := ctrl.expenseService.GetFamilyExpensesSummary(familyID)
-	investmentsSummary, _ := ctrl.investmentService.GetInvestmentsSummary(familyID)
+	// Parsear mês/ano do query parameter
+	month, year := 0, 0
+	if monthParam != "" {
+		// Formato esperado: YYYY-MM (ex: 2024-03)
+		var parseErr error
+		_, parseErr = fmt.Sscanf(monthParam, "%d-%d", &year, &month)
+		if parseErr != nil || month < 1 || month > 12 || year < 2000 {
+			utils.ErrorResponse(c, 400, "Formato de mês inválido. Use YYYY-MM (ex: 2024-03)")
+			return
+		}
+	}
+	
+	// Buscar resumos com filtro de mês
+	incomeSummary, _ := ctrl.incomeService.GetFamilyIncomeSummary(familyID, month, year)
+	expensesSummary, _ := ctrl.expenseService.GetFamilyExpensesSummary(familyID, month, year)
+	investmentsSummary, _ := ctrl.investmentService.GetInvestmentsSummary(familyID, month, year)
 	
 	// Reserva de emergência (pode não existir)
 	emergencyProgress, errEmergency := ctrl.emergencyService.GetEmergencyFundProgress(familyID)

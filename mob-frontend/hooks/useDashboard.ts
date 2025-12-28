@@ -13,8 +13,8 @@ interface UseDashboardReturn {
   data: DashboardData | null;
   isLoading: boolean;
   error: string | null;
-  fetchDashboard: (familyId: number) => Promise<void>;
-  refreshDashboard: (familyId: number) => Promise<void>;
+  fetchDashboard: (familyId: number, month?: string) => Promise<void>;
+  refreshDashboard: (familyId: number, month?: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -24,11 +24,11 @@ export const useDashboard = (): UseDashboardReturn => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchDashboard = useCallback(async (familyId: number) => {
+  const fetchDashboard = useCallback(async (familyId: number, month?: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      const dashboardData = await dashboardApi.getDashboard(familyId);
+      const dashboardData = await dashboardApi.getDashboard(familyId, month);
       setData(dashboardData);
     } catch (err) {
       const message = getErrorMessage(err);
@@ -39,10 +39,10 @@ export const useDashboard = (): UseDashboardReturn => {
     }
   }, []);
 
-  const refreshDashboard = useCallback(async (familyId: number) => {
+  const refreshDashboard = useCallback(async (familyId: number, month?: string) => {
     // Similar ao fetchDashboard mas pode ter lógica adicional
     // como invalidar cache, mostrar loading diferente, etc
-    await fetchDashboard(familyId);
+    await fetchDashboard(familyId, month);
   }, [fetchDashboard]);
 
   const clearError = () => setError(null);

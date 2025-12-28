@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import type { Alert as AlertType } from '../../lib/types/api.types';
 import { useDashboard } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
+import { useMonth } from '../../contexts/MonthContext';
 import { formatMoney } from '../../lib/utils/money';
 import { IncomeCard } from '../IncomeCard';
 import { PersonCard } from '../PersonCard';
@@ -15,13 +16,14 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function Dashboard() {
   const { family } = useFamilyContext();
+  const { selectedMonth } = useMonth();
   const { data, isLoading, error, fetchDashboard } = useDashboard();
 
   useEffect(() => {
     if (family) {
-      fetchDashboard(family.id);
+      fetchDashboard(family.id, selectedMonth);
     }
-  }, [family, fetchDashboard]);
+  }, [family, selectedMonth, fetchDashboard]);
 
 
   // Suporte para emergency_fund_progress ou emergency_fund
