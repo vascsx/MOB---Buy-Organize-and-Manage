@@ -85,7 +85,7 @@ export function EmergencyFund() {
       await createOrUpdate(family.id, {
         target_months: selectedGoal,
         monthly_expenses: monthlyCost,
-        monthly_goal: monthlyContribution / 100, // Enviar em reais
+        monthly_goal: monthlyContribution, // Enviar em reais
       });
       setIsAdjustModalOpen(false);
       await fetchProgress(family.id);

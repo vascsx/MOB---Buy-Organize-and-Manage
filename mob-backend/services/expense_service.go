@@ -243,23 +243,19 @@ func (s *ExpenseService) GetExpensesByCategory(familyID uint, month, year int) (
 	categoryMap := make(map[uint]*CategoryExpense)
 	totalCents := int64(0)
 	
-	   for _, exp := range expenses {
-		   // Não contabilizar despesas da categoria 'Reserva de Emergência'
-		   if exp.Category.Name == "Reserva de Emergência" {
-			   continue
-		   }
-		   amountFloat := float64(exp.AmountCents) / 100.0
-		   totalMonthly += amountFloat
-		   if exp.IsFixed {
-			   fixedCount++
-		   } else {
-			   variableCount++
-		   }
-		   // Agrupar por categoria
-		   if exp.Category.Name != "" {
-			   categoryTotals[exp.Category.Name] += amountFloat
-		   }
-	   }
+	for _, expense := range expenses {
+		totalCents += expense.AmountCents
+		
+		catID := expense.CategoryID
+		if _, exists := categoryMap[catID]; !exists {
+			categoryMap[catID] = &CategoryExpense{
+				CategoryID:   catID,
+				CategoryName: expense.Category.Name,
+				Total:        0,
+				Count:        0,
+			}
+		}
+		
 		categoryMap[catID].Total += utils.CentsToFloat(expense.AmountCents)
 		categoryMap[catID].Count++
 	}
@@ -355,7 +351,7 @@ func (s *ExpenseService) GetFamilyExpensesSummary(familyID uint, month, year int
 	categoryTotals := make(map[string]float64)
 	
 	for _, exp := range expenses {
-		amountFloat := float64(exp.AmountCents)
+		amountFloat := float64(exp.AmountCents) / 100.0
 		totalMonthly += amountFloat
 		
 		if exp.IsFixed {

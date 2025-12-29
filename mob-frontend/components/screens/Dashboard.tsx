@@ -100,12 +100,22 @@ export function Dashboard() {
     );
   }
 
+  // Filtrar despesas para ignorar "Reserva de Emergência" no dashboard
+  const filteredCategories = (data.expenses.by_category || []).filter(
+    (cat: any) => cat.category_name !== 'Reserva de Emergência'
+  );
+  const filteredTotalMonthly = filteredCategories.reduce((sum: number, cat: any) => sum + (cat.total || 0), 0);
+
+  // Valor total da categoria Reserva de Emergência
+  const emergencyCategory = (data.expenses.by_category || []).find((cat: any) => cat.category_name === 'Reserva de Emergência');
+  const emergencyTotal = emergencyCategory ? emergencyCategory.total : 0;
+
   return (
     <div className="space-y-6">
       {/* Hero Card - Renda Líquida */}
       <ErrorBoundary>
         <IncomeCard 
-          totalNet={(data.income.total_net || 0) * 100}  // converter reais para centavos
+          totalNet={(data.income.total_net || 0) * 100}
           totalGross={(data.income.total_gross || 0) * 100}
           totalTax={(data.income.total_tax || 0) * 100}
         />
@@ -120,7 +130,7 @@ export function Dashboard() {
               <ErrorBoundary key={member.member_id}>
                 <PersonCard
                   name={member.member_name}
-                  amount={formatMoney((member.net || 0) * 100)}  // converter reais para centavos
+                  amount={formatMoney((member.net || 0) * 100)}
                   type={member.type?.toUpperCase() || 'N/A'}
                   status="Ativo"
                 />
@@ -130,16 +140,27 @@ export function Dashboard() {
         </section>
       )}
 
+
       {/* Grid 2 colunas para Resumo e Alertas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ErrorBoundary>
-          <MonthSummary 
-            totalNet={(data.income.total_net || 0) * 100}  // converter reais para centavos
-            expenses={(data.expenses.total_monthly || 0) * 100}
-            investments={(data.investments.total_monthly || 0) * 100}
-            available={(data.available_income || 0) * 100}
-          />
-        </ErrorBoundary>
+        <div className="space-y-4">
+          <ErrorBoundary>
+            <MonthSummary 
+              totalNet={(data.income.total_net || 0) * 100}
+              expenses={filteredTotalMonthly * 100}
+              investments={(data.investments.total_monthly || 0) * 100}
+              available={(data.available_income || 0) * 100}
+            />
+          </ErrorBoundary>
+          {/* Card específico para Reserva de Emergência */}
+          <Card className="p-4 bg-blue-50 border-blue-200">
+            <div className="flex flex-col gap-1">
+              <span className="text-sm text-blue-700 font-semibold">Reserva de Emergência</span>
+              <span className="text-2xl font-bold text-blue-900">{formatMoney(emergencyTotal * 100)}</span>
+              <span className="text-xs text-blue-600">Aportes do mês</span>
+            </div>
+          </Card>
+        </div>
         <ErrorBoundary>
           <Alerts alerts={filteredAlerts} />
         </ErrorBoundary>
@@ -149,7 +170,7 @@ export function Dashboard() {
       <ErrorBoundary>
         <FinancialHealth 
           score={data.financial_health_score}
-          expenseRatio={data.income.total_net > 0 ? (data.expenses.total_monthly / data.income.total_net) * 100 : 0}
+          expenseRatio={data.income.total_net > 0 ? (filteredTotalMonthly / data.income.total_net) * 100 : 0}
           hasInvestments={data.investments && data.investments.total_monthly > 0}
           emergencyProgress={emergencyFundProgress?.completion_percent || 0}
           hasPositiveBalance={data.available_income > 0}

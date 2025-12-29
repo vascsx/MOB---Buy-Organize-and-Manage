@@ -506,7 +506,7 @@ export function Expenses() {
                       data={chartData.map((cat) => ({
                         name: cat.category_name,
                         value: cat.percentage ?? 0,
-                        amount: cat.total,
+                        amount: cat.total ?? 0,
                       }))}
                       cx="50%"
                       cy="50%"
