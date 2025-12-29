@@ -146,6 +146,7 @@ export interface Expense {
   splits?: ExpenseSplit[];
   created_at: string;
   updated_at: string;
+  is_emergency_reserve?: boolean;
 }
 
 export interface ExpenseSplit {
@@ -189,6 +190,7 @@ export interface CreateExpenseRequest {
   due_day?: number;
   is_fixed?: boolean;
   splits: ExpenseSplitInput[];
+  is_emergency_reserve?: boolean;
 }
 
 export interface ExpenseSplitInput {

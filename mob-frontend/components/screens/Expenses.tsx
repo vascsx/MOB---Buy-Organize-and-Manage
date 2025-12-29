@@ -28,6 +28,10 @@ const STATIC_CATEGORIES = [
   { id: 7, name: 'Vestuário', icon: '👔' },
   { id: 8, name: 'Utilidades', icon: '💡' },
   { id: 9, name: 'Outros', icon: '📦' },
+  { id: 10, name: 'Cartão de Crédito', icon: '💳' },
+  { id: 11, name: 'Reserva de Emergência', icon: '🛟' },
+  { id: 12, name: 'Gasolina', icon: '⛽' },
+  { id: 13, name: 'Água/Luz/Internet', icon: '💧⚡🌐' },
 ];
 
 export function Expenses() {
@@ -64,6 +68,7 @@ export function Expenses() {
     category_id: string;
     frequency: 'one_time' | 'monthly' | 'yearly';
     due_day: number;
+    is_emergency_reserve: boolean;
   }>({
     name: '',
     description: '',
@@ -72,6 +77,7 @@ export function Expenses() {
     category_id: '',
     frequency: 'one_time',
     due_day: 1,
+    is_emergency_reserve: false,
   });
 
 
@@ -103,6 +109,7 @@ export function Expenses() {
       category_id: String(expense.category_id),
       frequency: expense.frequency,
       due_day: expense.due_day || 1,
+      is_emergency_reserve: expense.is_emergency_reserve || false,
     });
     setIsDialogOpen(true);
   };
@@ -123,6 +130,7 @@ export function Expenses() {
         category_id: '',
         frequency: 'one_time',
         due_day: 1,
+        is_emergency_reserve: false,
       });
     }
     setIsDialogOpen(open);
@@ -152,6 +160,7 @@ export function Expenses() {
           amount_cents: formData.amount_cents,
           frequency: formData.frequency,
           due_day: formData.due_day,
+          is_emergency_reserve: formData.is_emergency_reserve,
           splits: [{
             family_member_id: defaultMember.id,
             percentage: 100,
@@ -166,6 +175,7 @@ export function Expenses() {
           amount_cents: formData.amount_cents,
           frequency: formData.frequency,
           due_day: formData.due_day,
+          is_emergency_reserve: formData.is_emergency_reserve,
           splits: [{
             family_member_id: defaultMember.id,
             percentage: 100,
@@ -184,6 +194,7 @@ export function Expenses() {
         category_id: '',
         frequency: 'one_time' as const,
         due_day: 1,
+        is_emergency_reserve: false,
       });
         // Refresh data
         fetchExpenses(family.id, selectedMonth);
@@ -228,6 +239,10 @@ export function Expenses() {
     { label: 'Mensal', value: 'monthly' },
     { label: 'Anual', value: 'yearly' },
   ];
+
+  const totalDespesas = expenses
+    .filter(exp => !exp.is_emergency_reserve)
+    .reduce((sum, exp) => sum + exp.amount_cents, 0);
 
   if (!family) {
     return (
@@ -345,15 +360,34 @@ export function Expenses() {
                   }}
                 />
               </div>
+              <div>
+                <Label htmlFor="is_emergency_reserve">Reserva de Emergência (apenas controle de aporte)</Label>
+                <input
+                  id="is_emergency_reserve"
+                  type="checkbox"
+                  checked={formData.is_emergency_reserve || false}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    setFormData(prev => ({
+                      ...prev,
+                      is_emergency_reserve: checked,
+                      category_id: checked ? String(STATIC_CATEGORIES.find(cat => cat.name === 'Outros')?.id || '9') : '',
+                    }));
+                  }}
+                  className="ml-2"
+                />
+                <span className="text-xs text-gray-500 ml-2">Não será contabilizada como despesa, apenas para controle de aporte mensal</span>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Categoria</Label>
-                  <Select 
+                  <Select
                     value={formData.category_id}
                     onValueChange={(value: string) => setFormData({ ...formData, category_id: value })}
+                    disabled={formData.is_emergency_reserve}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
+                      <SelectValue placeholder={formData.is_emergency_reserve ? "Reserva de Emergência" : "Selecione..."} />
                     </SelectTrigger>
                     <SelectContent>
                       {STATIC_CATEGORIES.map((cat) => (
@@ -363,6 +397,9 @@ export function Expenses() {
                       ))}
                     </SelectContent>
                   </Select>
+                  {formData.is_emergency_reserve && (
+                    <span className="text-xs text-gray-500 ml-2">Categoria será definida automaticamente como "Outros"</span>
+                  )}
                 </div>
                 <div>
                   <Label>Frequência</Label>
@@ -408,6 +445,7 @@ export function Expenses() {
                       category_id: '',
                       frequency: 'one_time',
                       due_day: 1,
+                      is_emergency_reserve: false,
                     });
                   }}
                 >
