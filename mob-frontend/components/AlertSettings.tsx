@@ -21,15 +21,20 @@ const defaultSettings: AlertSettingsType = {
   incomeVariation: true,
 };
 
+
 export function AlertSettings() {
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<AlertSettingsType>(defaultSettings);
+  const [initialSettings, setInitialSettings] = useState<AlertSettingsType>(defaultSettings);
+  const [changed, setChanged] = useState(false);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem('alertSettings');
       if (saved) {
-        setSettings({ ...defaultSettings, ...JSON.parse(saved) });
+        const loaded = { ...defaultSettings, ...JSON.parse(saved) };
+        setSettings(loaded);
+        setInitialSettings(loaded);
       }
     } catch (error) {
       console.error('Failed to load alert settings:', error);
@@ -40,10 +45,22 @@ export function AlertSettings() {
     const newSettings = { ...settings, [key]: !settings[key] };
     setSettings(newSettings);
     localStorage.setItem('alertSettings', JSON.stringify(newSettings));
+    setChanged(true);
+  };
+
+  const handleDone = () => {
+    setIsOpen(false);
+    if (changed) {
+      window.location.reload();
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      // Só permite fechar via handleDone (botão Concluído)
+      if (open) setIsOpen(true);
+      // Ignora tentativas de fechar por overlay ou X
+    }}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Settings className="w-4 h-4" />
@@ -142,7 +159,7 @@ export function AlertSettings() {
           </div>
 
           <div className="flex justify-end pt-4 border-t">
-            <Button onClick={() => setIsOpen(false)}>
+            <Button onClick={handleDone}>
               Concluído
             </Button>
           </div>
