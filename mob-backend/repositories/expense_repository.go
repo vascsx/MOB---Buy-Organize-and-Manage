@@ -176,3 +176,50 @@ func (r *ExpenseRepository) UpdateWithTransaction(fn func(*ExpenseRepository) er
 		return fn(txRepo)
 	})
 }
+
+// GetByFamilyIDAndType busca despesas de uma família filtradas por tipo
+func (r *ExpenseRepository) GetByFamilyIDAndType(familyID uint, expenseType models.ExpenseType) ([]models.Expense, error) {
+	var expenses []models.Expense
+	err := r.db.Where("family_account_id = ? AND expense_type = ? AND is_active = ?", 
+		familyID, expenseType, true).
+		Preload("Category").
+		Preload("Splits", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "expense_id", "family_member_id", "percentage", "amount_cents")
+		}).
+		Preload("Splits.FamilyMember", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name", "family_account_id")
+		}).
+		Order("created_at DESC").
+		Find(&expenses).Error
+	
+	return expenses, err
+}
+
+// CalculateTotalByType calcula total de despesas de um tipo específico (mensal + anual/12)
+func (r *ExpenseRepository) CalculateTotalByType(familyID uint, expenseType models.ExpenseType) (int64, error) {
+	var expenses []models.Expense
+	
+	err := r.db.Where("family_account_id = ? AND expense_type = ? AND is_active = ?", 
+		familyID, expenseType, true).
+		Find(&expenses).Error
+	
+	if err != nil {
+		return 0, err
+	}
+	
+	var total int64
+	for _, expense := range expenses {
+		switch expense.Frequency {
+		case models.ExpenseMonthly:
+			total += expense.AmountCents
+		case models.ExpenseYearly:
+			// Converter anual para mensal (dividir por 12)
+			total += expense.AmountCents / 12
+		case models.ExpenseOneTime:
+			// one_time também conta (aporte único)
+			total += expense.AmountCents
+		}
+	}
+	
+	return total, nil
+}

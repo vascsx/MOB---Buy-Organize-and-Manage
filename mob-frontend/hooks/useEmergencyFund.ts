@@ -29,6 +29,7 @@ interface UseEmergencyFundReturn {
   fetchProjection: (familyId: number, months?: number) => Promise<void>;
   createOrUpdate: (familyId: number, data: CreateEmergencyFundRequest) => Promise<EmergencyFund>;
   updateCurrentAmount: (familyId: number, amount: number) => Promise<void>;
+  deleteEmergencyFund: (familyId: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -141,6 +142,27 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
     [fetchProgress]
   );
 
+  const deleteEmergencyFund = useCallback(
+    async (familyId: number): Promise<void> => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        await emergencyFundApi.deleteEmergencyFund(familyId);
+        setFund(null);
+        setProgress(null);
+        toast.success('Reserva resetada!', { description: 'Reserva de emergência foi removida com sucesso' });
+      } catch (err) {
+        const message = getErrorMessage(err);
+        setError(message);
+        toast.error('Erro ao deletar reserva', { description: message });
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
   const clearError = () => setError(null);
 
   return {
@@ -156,6 +178,7 @@ export const useEmergencyFund = (): UseEmergencyFundReturn => {
     fetchProjection,
     createOrUpdate,
     updateCurrentAmount,
+    deleteEmergencyFund,
     clearError,
   };
 };

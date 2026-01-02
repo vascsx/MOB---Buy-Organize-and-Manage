@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useInvestments } from '../../hooks';
 import { useFamilyContext } from '../../contexts/FamilyContext';
-import { useMonth } from '../../contexts/MonthContext';
 import { formatMoney } from '../../lib/utils/money';
 import { getInvestmentTypeIcon, getInvestmentTypeName } from '../../lib/utils/investment';
 import { useToast } from '../../hooks/useToast';
@@ -15,7 +14,6 @@ import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 export function Investments() {
   const { family } = useFamilyContext();
-  const { selectedMonth } = useMonth();
   const {
     investments,
     summary,
@@ -42,11 +40,11 @@ export function Investments() {
 
   useEffect(() => {
     if (family) {
-      fetchInvestments(family.id, selectedMonth);
-      fetchSummary(family.id, selectedMonth);
+      fetchInvestments(family.id);
+      fetchSummary(family.id);
       fetchProjections(family.id, parseInt(selectedTab));
     }
-  }, [family, selectedMonth]);
+  }, [family]);
 
   useEffect(() => {
     if (family) {
@@ -69,8 +67,8 @@ export function Investments() {
     
     try {
       await deleteInvestment(family.id, deletingInvestment.id);
-      await fetchInvestments(family.id, selectedMonth);
-      await fetchSummary(family.id, selectedMonth);
+      await fetchInvestments(family.id);
+      await fetchSummary(family.id);
       await fetchProjections(family.id, parseInt(selectedTab));
       setShowDeleteConfirm(false);
       setDeletingInvestment(null);
@@ -134,6 +132,9 @@ export function Investments() {
           {summary?.total_monthly && summary.total_monthly > 0 && (
             <span className="ml-2">• Aporte mensal: {formatMoney((summary.total_monthly || 0) * 100)}</span>
           )}
+        </p>
+        <p className="text-xs text-green-700 mt-2">
+          💡 Inclui aportes via despesas tipo "Investimento"
         </p>
       </Card>
 
@@ -284,8 +285,8 @@ export function Investments() {
           onSuccess={async () => {
             setShowAddModal(false);
             if (family) {
-              await fetchInvestments(family.id, selectedMonth);
-              await fetchSummary(family.id, selectedMonth);
+              await fetchInvestments(family.id);
+              await fetchSummary(family.id);
               await fetchProjections(family.id, parseInt(selectedTab));
             }
           }}
@@ -305,8 +306,8 @@ export function Investments() {
             setShowEditModal(false);
             setEditingInvestment(null);
             if (family) {
-              await fetchInvestments(family.id, selectedMonth);
-              await fetchSummary(family.id, selectedMonth);
+              await fetchInvestments(family.id);
+              await fetchSummary(family.id);
               await fetchProjections(family.id, parseInt(selectedTab));
             }
           }}

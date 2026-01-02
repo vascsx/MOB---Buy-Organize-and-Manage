@@ -28,6 +28,7 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		Description string                       `json:"description"`
 		AmountCents int64                        `json:"amount_cents"`
 		Frequency   string                       `json:"frequency"`
+		ExpenseType string                       `json:"expense_type"`
 		DueDay      int                          `json:"due_day"`
 		IsFixed     bool                         `json:"is_fixed"`
 		Splits      []services.ExpenseSplitInput `json:"splits"`
@@ -45,6 +46,7 @@ func (ctrl *ExpenseController) CreateExpense(c *gin.Context) {
 		Description:     input.Description,
 		AmountCents:     input.AmountCents,
 		Frequency:       models.ExpenseFrequency(input.Frequency),
+		ExpenseType:     models.ExpenseType(input.ExpenseType),
 		DueDay:          input.DueDay,
 		IsFixed:         input.IsFixed,
 		IsActive:        true,
@@ -176,6 +178,7 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 		Description string                       `json:"description"`
 		AmountCents int64                        `json:"amount_cents"`
 		Frequency   string                       `json:"frequency"`
+		ExpenseType string                       `json:"expense_type"`
 		DueDay      int                          `json:"due_day"`
 		IsFixed     *bool                        `json:"is_fixed"`
 		Splits      []services.ExpenseSplitInput `json:"splits"`
@@ -198,6 +201,9 @@ func (ctrl *ExpenseController) UpdateExpense(c *gin.Context) {
 	}
 	if input.Frequency != "" {
 		expense.Frequency = models.ExpenseFrequency(input.Frequency)
+	}
+	if input.ExpenseType != "" {
+		expense.ExpenseType = models.ExpenseType(input.ExpenseType)
 	}
 	if input.DueDay > 0 {
 		expense.DueDay = input.DueDay

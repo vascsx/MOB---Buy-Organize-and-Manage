@@ -4,7 +4,6 @@ import { IndividualProfile } from './components/screens/IndividualProfile';
 import { Expenses } from './components/screens/Expenses';
 import { Investments } from './components/screens/Investments';
 import { EmergencyFund } from './components/screens/EmergencyFund';
-import { Projections } from './components/screens/Projections';
 import { Settings } from './components/screens/Settings';
 import { FamilyOnboarding } from './components/screens/FamilyOnboarding';
 import { AppHeader } from './components/AppHeader';
@@ -63,8 +62,6 @@ export default function App() {
         return <Investments />;
       case 'reserva':
         return <EmergencyFund />;
-      case 'projecoes':
-        return <Projections />;
       case 'configuracoes':
         return <Settings />;
       default:

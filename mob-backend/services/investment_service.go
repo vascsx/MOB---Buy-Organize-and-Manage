@@ -9,11 +9,16 @@ import (
 
 type InvestmentService struct {
 	investmentRepo *repositories.InvestmentRepository
+	expenseRepo    *repositories.ExpenseRepository
 }
 
-func NewInvestmentService(investmentRepo *repositories.InvestmentRepository) *InvestmentService {
+func NewInvestmentService(
+	investmentRepo *repositories.InvestmentRepository,
+	expenseRepo *repositories.ExpenseRepository,
+) *InvestmentService {
 	return &InvestmentService{
 		investmentRepo: investmentRepo,
+		expenseRepo:    expenseRepo,
 	}
 }
 
@@ -188,6 +193,12 @@ func (s *InvestmentService) GetInvestmentsSummary(familyID uint, month, year int
 		return nil, err
 	}
 	
+	// Buscar aportes via despesas do tipo investment
+	investmentExpensesTotal, err := s.expenseRepo.CalculateTotalByType(familyID, models.ExpenseTypeInvestment)
+	if err != nil {
+		investmentExpensesTotal = 0 // Continuar mesmo com erro
+	}
+	
 	// Calcular totais
 	totalBalance := int64(0)
 	totalMonthly := int64(0)
@@ -213,6 +224,9 @@ func (s *InvestmentService) GetInvestmentsSummary(familyID uint, month, year int
 		byTypeMap[inv.Type].TotalMonthly += utils.CentsToFloat(inv.MonthlyContributionCents)
 		byTypeMap[inv.Type].AverageReturnRate += inv.AnnualReturnRate
 	}
+	
+	// Adicionar aportes via despesas ao total mensal
+	totalMonthly += investmentExpensesTotal
 	
 	// Calcular média de retorno
 	byType := []InvestmentByType{}

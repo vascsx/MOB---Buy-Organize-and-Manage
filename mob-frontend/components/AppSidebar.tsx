@@ -13,7 +13,6 @@ export function AppSidebar({ activeItem, onItemClick }: SidebarProps) {
     { id: 'despesas', label: 'Despesas', icon: TrendingDown },
     { id: 'investimentos', label: 'Investimentos', icon: BarChart3 },
     { id: 'reserva', label: 'Reserva', icon: PiggyBank },
-    { id: 'projecoes', label: 'Projeções', icon: Wallet },
     { id: 'configuracoes', label: 'Configurações', icon: Settings },
   ];
 

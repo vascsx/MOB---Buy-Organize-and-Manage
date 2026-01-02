@@ -73,4 +73,11 @@ export const emergencyFundApi = {
       current_amount: amount,
     });
   },
+
+  /**
+   * Deletar reserva de emergência
+   */
+  deleteEmergencyFund: async (familyId: number): Promise<void> => {
+    await apiClient.delete(`/families/${familyId}/emergency-fund`);
+  },
 };

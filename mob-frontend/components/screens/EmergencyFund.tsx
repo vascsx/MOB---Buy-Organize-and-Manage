@@ -25,6 +25,7 @@ export function EmergencyFund() {
     fetchSuggestion,
     createOrUpdate,
     updateCurrentAmount,
+    deleteEmergencyFund,
     projection,
     fetchProjection
   } = useEmergencyFund();
@@ -33,6 +34,7 @@ export function EmergencyFund() {
 
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
   const [isAddAmountModalOpen, setIsAddAmountModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(6);
   const [monthlyContribution, setMonthlyContribution] = useState(800);
   const [monthlyCost, setMonthlyCost] = useState(5000);
@@ -110,6 +112,17 @@ export function EmergencyFund() {
     } catch (err) {
       console.error('Erro ao aplicar sugestão:', err);
       toast.error('Erro ao aplicar sugestão', { description: 'Não foi possível aplicar a sugestão' });
+    }
+  };
+
+  const handleDeleteEmergencyFund = async () => {
+    if (!family) return;
+    try {
+      await deleteEmergencyFund(family.id);
+      setIsDeleteModalOpen(false);
+      // Redirecionar ou mostrar mensagem
+    } catch (err) {
+      console.error('Erro ao resetar reserva:', err);
     }
   };
 
@@ -341,6 +354,7 @@ export function EmergencyFund() {
           <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
             <p className="text-sm text-green-700 mb-2">💰 Valor Atual</p>
             <p className="text-4xl font-bold text-green-800">R$ {currentAmount.toLocaleString()}</p>
+            <p className="text-xs text-green-600 mt-2">Inclui aportes via despesas tipo "Reserva de Emergência"</p>
           </div>
           
           <div className="text-center p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-xl border border-orange-200">
@@ -606,7 +620,7 @@ export function EmergencyFund() {
       </div>
 
       {/* Ações */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Dialog open={isAddAmountModalOpen} onOpenChange={setIsAddAmountModalOpen}>
           <DialogTrigger asChild>
             <Button className="h-16 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg shadow-lg transform transition-all duration-200 hover:scale-105">
@@ -734,6 +748,65 @@ export function EmergencyFund() {
                   disabled={isLoading}
                 >
                   {isLoading ? 'Salvando...' : 'Salvar'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Botão Resetar Reserva */}
+        <Button 
+          onClick={() => setIsDeleteModalOpen(true)}
+          variant="outline"
+          className="h-16 border-2 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 font-bold text-lg shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🗑️</span>
+            <span>Resetar Reserva</span>
+          </div>
+        </Button>
+
+        {/* Modal de Deletar/Resetar Reserva */}
+        <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>⚠️ Resetar Reserva de Emergência?</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <p className="text-sm text-red-800">
+                  <strong>Atenção:</strong> Esta ação irá remover completamente sua reserva de emergência, incluindo:
+                </p>
+                <ul className="list-disc list-inside text-sm text-red-700 mt-2 ml-2">
+                  <li>Meta configurada</li>
+                  <li>Valor atual acumulado (apenas do registro, não das despesas)</li>
+                  <li>Histórico de progresso</li>
+                </ul>
+                <p className="text-sm text-red-700 mt-2">
+                  ⚠️ Despesas marcadas como "Reserva de Emergência" não serão afetadas.
+                </p>
+              </div>
+
+              <p className="text-sm text-gray-600">
+                Você precisará configurar uma nova meta para voltar a usar esta funcionalidade.
+              </p>
+
+              <div className="flex gap-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsDeleteModalOpen(false)} 
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleDeleteEmergencyFund}
+                  variant="destructive"
+                  className="flex-1"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Resetando...' : 'Sim, Resetar'}
                 </Button>
               </div>
             </div>

@@ -124,6 +124,16 @@ func (s *EmergencyFundService) GetEmergencyFundProgress(familyID uint) (*Emergen
 		return nil, err
 	}
 	
+	// Buscar aportes via despesas do tipo emergency_reserve
+	emergencyExpensesTotal, err := s.expenseRepo.CalculateTotalByType(familyID, models.ExpenseTypeEmergencyReserve)
+	if err != nil {
+		emergencyExpensesTotal = 0 // Continuar mesmo com erro
+	}
+	
+	// Converter centavos para reais e adicionar ao valor atual
+	emergencyExpensesInReais := float64(emergencyExpensesTotal) / 100.0
+	totalCurrentAmount := fund.CurrentAmount + emergencyExpensesInReais
+	
 	   // (Removido: cálculo de monthlyExpenses não é mais necessário)
 	
 	// Aqui, use os próprios campos do fund, pois já estão em reais
@@ -131,12 +141,12 @@ func (s *EmergencyFundService) GetEmergencyFundProgress(familyID uint) (*Emergen
 		TargetMonths:      fund.TargetMonths,
 		MonthlyExpenses:   fund.MonthlyExpenses,
 		TargetAmount:      fund.TargetAmount,
-		CurrentAmount:     fund.CurrentAmount,
-		RemainingAmount:   fund.TargetAmount - fund.CurrentAmount,
+		CurrentAmount:     totalCurrentAmount,
+		RemainingAmount:   fund.TargetAmount - totalCurrentAmount,
 		MonthlyGoal:       fund.MonthlyGoal,
 		EstimatedMonths:   fund.EstimatedMonths,
-		CompletionPercent: (fund.CurrentAmount / fund.TargetAmount) * 100,
-		IsComplete:        fund.CurrentAmount >= fund.TargetAmount,
+		CompletionPercent: (totalCurrentAmount / fund.TargetAmount) * 100,
+		IsComplete:        totalCurrentAmount >= fund.TargetAmount,
 	}, nil
 }
 

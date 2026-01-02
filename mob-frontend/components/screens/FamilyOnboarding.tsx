@@ -67,10 +67,6 @@ export function FamilyOnboarding({ onCreateFamily, isLoading }: FamilyOnboarding
               <span className="text-green-600 font-bold">✓</span>
               <span>Planejar investimentos familiares</span>
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-600 font-bold">✓</span>
-              <span>Acompanhar projeções financeiras</span>
-            </li>
           </ul>
         </div>
 

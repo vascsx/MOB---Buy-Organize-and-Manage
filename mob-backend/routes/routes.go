@@ -23,7 +23,7 @@ func SetupRoutes(r *gin.Engine) {
 	familyService := services.NewFamilyService(familyRepo)
 	incomeService := services.NewIncomeService(incomeRepo, familyRepo)
 	expenseService := services.NewExpenseService(expenseRepo, familyRepo, categoryRepo)
-	investmentService := services.NewInvestmentService(investmentRepo)
+	investmentService := services.NewInvestmentService(investmentRepo, expenseRepo)
 	emergencyService := services.NewEmergencyFundService(emergencyRepo, expenseRepo, incomeRepo)
 	
 	// Inicializar controllers
@@ -103,21 +103,7 @@ func SetupRoutes(r *gin.Engine) {
 				
 				// ===== DASHBOARD =====
 				family.GET("/dashboard", dashboardCtrl.GetDashboard)
-				family.GET("/financial-health", dashboardCtrl.GetFinancialHealth)
 			}
 		}
-	}
-	
-	// ===== ROTAS LEGADAS (manter compatibilidade) =====
-	auth := r.Group("/")
-	auth.Use(middleware.AuthMiddleware())
-	{
-		auth.POST("/renda", controllers.DefinirRenda)
-		auth.POST("/gasto", controllers.AdicionarGasto)
-		auth.GET("/gastos/:mesAno", controllers.ListarGastos)
-		auth.GET("/resumo/:mesAno", controllers.ResumoMes)
-		auth.GET("/investimentos", controllers.InvestimentosPorMes)
-		auth.GET("/gastos-anuais/:ano", controllers.GastosAnuais)
-		auth.DELETE("/gasto/:mesAno/:index", controllers.RemoverGasto)
 	}
 }
