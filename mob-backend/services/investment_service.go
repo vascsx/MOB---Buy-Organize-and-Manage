@@ -193,11 +193,17 @@ func (s *InvestmentService) GetInvestmentsSummary(familyID uint, month, year int
 		return nil, err
 	}
 	
-	// Buscar aportes via despesas do tipo investment
-	investmentExpensesTotal, err := s.expenseRepo.CalculateTotalByType(familyID, models.ExpenseTypeInvestment)
-	if err != nil {
-		investmentExpensesTotal = 0 // Continuar mesmo com erro
-	}
+	// Buscar aportes via despesas de categorias de investimento (adicione IDs conforme necessário)
+	// Como não há mais ExpenseType, consideramos que investimentos são categoria específica ou não somamos aqui
+	investmentExpensesTotal := int64(0)
+	// Se houver categorias específicas de investimento, buscar por elas
+	// const investmentCategoryID = X
+	// investmentExpenses, err := s.expenseRepo.GetByFamilyIDWithCategory(familyID, investmentCategoryID)
+	// if err == nil {
+	//     for _, exp := range investmentExpenses {
+	//         investmentExpensesTotal += exp.AmountCents
+	//     }
+	// }
 	
 	// Calcular totais
 	totalBalance := int64(0)

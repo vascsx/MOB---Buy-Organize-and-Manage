@@ -122,9 +122,6 @@ export interface CreateIncomeRequest {
 }
 
 // ===== EXPENSE =====
-export type ExpenseFrequency = 'one_time' | 'monthly' | 'yearly';
-export type ExpenseType = 'expense' | 'emergency_reserve' | 'investment';
-
 export interface ExpenseCategory {
   id: number;
   name: string;
@@ -140,8 +137,6 @@ export interface Expense {
   name: string;
   description?: string;
   amount_cents: number;
-  frequency: ExpenseFrequency;
-  expense_type: ExpenseType;
   due_day?: number;
   is_fixed: boolean;
   is_active: boolean;
@@ -187,8 +182,6 @@ export interface CreateExpenseRequest {
   name: string;
   description?: string;
   amount_cents: number;
-  frequency?: ExpenseFrequency;
-  expense_type?: ExpenseType;
   due_day?: number;
   is_fixed?: boolean;
   splits: ExpenseSplitInput[];
@@ -363,7 +356,6 @@ export interface PaginationParams {
 export interface ExpenseFilters {
   category_id?: number;
   member_id?: number;
-  frequency?: ExpenseFrequency;
   is_active?: boolean;
 }
 

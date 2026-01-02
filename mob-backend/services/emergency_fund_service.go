@@ -124,10 +124,17 @@ func (s *EmergencyFundService) GetEmergencyFundProgress(familyID uint) (*Emergen
 		return nil, err
 	}
 	
-	// Buscar aportes via despesas do tipo emergency_reserve
-	emergencyExpensesTotal, err := s.expenseRepo.CalculateTotalByType(familyID, models.ExpenseTypeEmergencyReserve)
+	// Buscar aportes via despesas da categoria "Reserva de Emergência" (ID 11)
+	const emergencyFundCategoryID = 11
+	emergencyExpenses, err := s.expenseRepo.GetByFamilyIDWithCategory(familyID, emergencyFundCategoryID)
 	if err != nil {
-		emergencyExpensesTotal = 0 // Continuar mesmo com erro
+		emergencyExpenses = []models.Expense{} // Continuar mesmo com erro
+	}
+	
+	// Somar todos os aportes
+	var emergencyExpensesTotal int64
+	for _, exp := range emergencyExpenses {
+		emergencyExpensesTotal += exp.AmountCents
 	}
 	
 	// Converter centavos para reais e adicionar ao valor atual

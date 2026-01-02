@@ -21,11 +21,10 @@ import { getErrorMessage } from '../../lib/api/client';
 const STATIC_CATEGORIES = [
   { id: 1, name: 'Moradia', icon: '🏠' },
   { id: 2, name: 'Alimentação', icon: '🍽️' },
-  { id: 3, name: 'Transporte', icon: '🚗' },
   { id: 4, name: 'Saúde', icon: '🏥' },
   { id: 5, name: 'Educação', icon: '📚' },
   { id: 6, name: 'Lazer', icon: '🎮' },
-  { id: 7, name: 'Vestuário', icon: '👔' },
+  { id: 7, name: 'Investimentos', icon: '💼' },
   { id: 8, name: 'Utilidades', icon: '💡' },
   { id: 9, name: 'Outros', icon: '📦' },
   { id: 10, name: 'Cartão de Crédito', icon: '💳' },
@@ -52,7 +51,7 @@ export function Expenses() {
   } = useExpenses();
   const { toast } = useToast();
 
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedFilter, setSelectedFilter] = useState<string | number>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
@@ -66,8 +65,6 @@ export function Expenses() {
     amount_cents: number;
     amount_cents_display: string;
     category_id: string;
-    frequency: 'one_time' | 'monthly' | 'yearly';
-    expense_type: 'expense' | 'emergency_reserve' | 'investment';
     due_day: number;
   }>({
     name: '',
@@ -75,8 +72,6 @@ export function Expenses() {
     amount_cents: 0,
     amount_cents_display: '',
     category_id: '',
-    frequency: 'one_time',
-    expense_type: 'expense',
     due_day: 1,
   });
 
@@ -107,8 +102,6 @@ export function Expenses() {
       amount_cents: expense.amount_cents,
       amount_cents_display: (expense.amount_cents / 100).toFixed(2).replace('.', ','),
       category_id: String(expense.category_id),
-      frequency: expense.frequency,
-      expense_type: expense.expense_type || 'expense',
       due_day: expense.due_day || 1,
     });
     setIsDialogOpen(true);
@@ -128,8 +121,6 @@ export function Expenses() {
         amount_cents: 0,
         amount_cents_display: '',
         category_id: '',
-        frequency: 'one_time',
-        expense_type: 'expense',
         due_day: 1,
       });
     }
@@ -158,8 +149,6 @@ export function Expenses() {
           description: formData.description || undefined,
           category_id: parseInt(formData.category_id),
           amount_cents: formData.amount_cents,
-          frequency: formData.frequency,
-          expense_type: formData.expense_type,
           due_day: formData.due_day,
           splits: [{
             family_member_id: defaultMember.id,
@@ -173,8 +162,6 @@ export function Expenses() {
           description: formData.description || undefined,
           category_id: parseInt(formData.category_id),
           amount_cents: formData.amount_cents,
-          frequency: formData.frequency,
-          expense_type: formData.expense_type,
           due_day: formData.due_day,
           splits: [{
             family_member_id: defaultMember.id,
@@ -192,8 +179,6 @@ export function Expenses() {
         amount_cents: 0,
         amount_cents_display: '',
         category_id: '',
-        frequency: 'one_time' as const,
-        expense_type: 'expense',
         due_day: 1,
       });
         // Refresh data
@@ -233,16 +218,15 @@ export function Expenses() {
     }
   };
 
-  const filters = [
+  // Filtros por categoria especial
+  const specialCategories = [
     { label: 'Todas', value: 'all' },
-    { label: 'Única', value: 'one_time' },
-    { label: 'Mensal', value: 'monthly' },
-    { label: 'Anual', value: 'yearly' },
+    { label: 'Despesas', value: 'despesas' },
+    { label: 'Reserva de Emergência', value: 11 }, // ID da categoria
+    { label: 'Investimentos', value: 'investimentos' },
   ];
 
-  const totalDespesas = expenses
-    .filter(exp => exp.expense_type === 'expense')
-    .reduce((sum, exp) => sum + exp.amount_cents, 0);
+  const totalDespesas = expenses.reduce((sum, exp) => sum + exp.amount_cents, 0);
 
   if (!family) {
     return (
@@ -360,34 +344,6 @@ export function Expenses() {
                   }}
                 />
               </div>
-              <div>
-                <Label htmlFor="expense_type">Tipo de Despesa</Label>
-                <Select
-                  value={formData.expense_type}
-                  onValueChange={(value: 'expense' | 'emergency_reserve' | 'investment') => {
-                    setFormData(prev => ({
-                      ...prev,
-                      expense_type: value,
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="expense">💸 Despesa</SelectItem>
-                    <SelectItem value="emergency_reserve">🛟 Reserva de Emergência</SelectItem>
-                    <SelectItem value="investment">📈 Investimento</SelectItem>
-                  </SelectContent>
-                </Select>
-                {formData.expense_type !== 'expense' && (
-                  <span className="text-xs text-gray-500 mt-1 block">
-                    {formData.expense_type === 'emergency_reserve' 
-                      ? 'Será contabilizado como aporte para a reserva de emergência' 
-                      : 'Será contabilizado como aporte para investimentos'}
-                  </span>
-                )}
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Categoria</Label>
@@ -406,38 +362,19 @@ export function Expenses() {
                       ))}
                     </SelectContent>
                   </Select>
-                  {formData.expense_type !== 'expense' && (
-                    <span className="text-xs text-gray-500 block mt-1">Categoria informativa apenas</span>
-                  )}
                 </div>
                 <div>
-                  <Label>Frequência</Label>
-                  <Select 
-                    value={formData.frequency}
-                    onValueChange={(value: string) => setFormData({ ...formData, frequency: value as 'one_time' | 'monthly' | 'yearly' })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="one_time">Única</SelectItem>
-                      <SelectItem value="monthly">Mensal</SelectItem>
-                      <SelectItem value="yearly">Anual</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="due_day">Dia de Vencimento</Label>
+                  <Input
+                    id="due_day"
+                    type="number"
+                    min="1"
+                    max="31"
+                    placeholder="1-31"
+                    value={formData.due_day}
+                    onChange={(e) => setFormData({ ...formData, due_day: parseInt(e.target.value) || 1 })}
+                  />
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="due_day">Dia de Vencimento</Label>
-                <Input
-                  id="due_day"
-                  type="number"
-                  min="1"
-                  max="31"
-                  placeholder="1-31"
-                  value={formData.due_day}
-                  onChange={(e) => setFormData({ ...formData, due_day: parseInt(e.target.value) || 1 })}
-                />
               </div>
               <div className="flex justify-end gap-3 pt-4">
                 <Button
@@ -452,8 +389,6 @@ export function Expenses() {
                       amount_cents: 0,
                       amount_cents_display: '',
                       category_id: '',
-                      frequency: 'one_time',
-                      expense_type: 'expense',
                       due_day: 1,
                     });
                   }}
@@ -478,9 +413,9 @@ export function Expenses() {
         </Dialog>
       </div>
 
-      {/* Filtros por Frequência */}
+      {/* Filtros por Categoria */}
       <div className="flex flex-wrap gap-2">
-        {filters.map((filter) => (
+        {specialCategories.map((filter) => (
           <button
             key={filter.value}
             onClick={() => setSelectedFilter(filter.value)}
@@ -584,9 +519,23 @@ export function Expenses() {
           <h3 className="text-xl">Lista de Despesas ({expenses?.length || 0})</h3>
           {expenses && expenses.length > 0 ? (
             expenses
-              .filter((expense) =>
-                selectedFilter === 'all' ? true : expense.frequency === selectedFilter
-              )
+              .filter((expense) => {
+                if (selectedFilter === 'all') return true;
+                if (selectedFilter === 'despesas') {
+                  // Todas exceto Reserva de Emergência (11)
+                  return expense.category_id !== 11;
+                }
+                if (selectedFilter === 11) {
+                  // Apenas Reserva de Emergência
+                  return expense.category_id === 11;
+                }
+                if (selectedFilter === 'investimentos') {
+                  // Apenas categorias de investimento (pode adicionar IDs se houver categorias específicas)
+                  const investmentCategories: number[] = []; // Adicione IDs se necessário
+                  return investmentCategories.includes(expense.category_id);
+                }
+                return true;
+              })
               .map((expense) => (
                 <Card
                   key={expense.id}
@@ -601,22 +550,9 @@ export function Expenses() {
                         <h4 className="font-bold">{expense.name}</h4>
                         {expense.description && <p className="text-sm text-gray-500">{expense.description}</p>}
                         <div className="flex gap-2 mt-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {expense.frequency === 'monthly' ? 'Mensal' : expense.frequency === 'yearly' ? 'Anual' : 'Única'}
-                          </Badge>
                           <Badge variant="outline" className="text-xs">
                             {STATIC_CATEGORIES.find((c) => c.id === expense.category_id)?.name || 'Outros'}
                           </Badge>
-                          {expense.expense_type === 'emergency_reserve' && (
-                            <Badge className="bg-orange-100 text-orange-700 text-xs">
-                              🛟 Reserva de Emergência
-                            </Badge>
-                          )}
-                          {expense.expense_type === 'investment' && (
-                            <Badge className="bg-green-100 text-green-700 text-xs">
-                              📈 Investimento
-                            </Badge>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -642,11 +578,6 @@ export function Expenses() {
                     <span>
                       {new Date(expense.created_at).toLocaleDateString('pt-BR')}
                     </span>
-                    {expense.frequency === 'monthly' && (
-                      <Badge className="bg-blue-100 text-blue-700 text-xs">
-                        Recorrente
-                      </Badge>
-                    )}
                   </div>
                 </Card>
               ))

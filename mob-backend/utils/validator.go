@@ -242,24 +242,6 @@ func ValidateIncomeType(incomeType string) error {
 	return nil
 }
 
-// ValidateExpenseFrequency valida frequência de despesa
-func ValidateExpenseFrequency(frequency string) error {
-	validFrequencies := map[string]bool{
-		"monthly":  true,
-		"yearly":   true,
-		"one_time": true,
-	}
-	
-	if !validFrequencies[frequency] {
-		return ValidationError{
-			Field:   "frequency",
-			Message: "deve ser monthly, yearly ou one_time",
-		}
-	}
-	
-	return nil
-}
-
 // ValidateInvestmentType valida tipo de investimento
 func ValidateInvestmentType(investmentType string) error {
 	validTypes := map[string]bool{

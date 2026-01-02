@@ -32,7 +32,6 @@ func (s *ExpenseService) CreateExpense(expense *models.Expense, splits []Expense
 	
 	validator.Add(utils.ValidateRequiredString(expense.Name, "name"))
 	validator.Add(utils.ValidatePositiveAmount(expense.AmountCents, "amount_cents"))
-	validator.Add(utils.ValidateExpenseFrequency(string(expense.Frequency)))
 	validator.Add(utils.ValidateDueDay(expense.DueDay))
 	
 	if len(splits) == 0 {
@@ -98,7 +97,6 @@ func (s *ExpenseService) UpdateExpense(expense *models.Expense, splits []Expense
 	
 	validator.Add(utils.ValidateRequiredString(expense.Name, "name"))
 	validator.Add(utils.ValidatePositiveAmount(expense.AmountCents, "amount_cents"))
-	validator.Add(utils.ValidateExpenseFrequency(string(expense.Frequency)))
 	validator.Add(utils.ValidateDueDay(expense.DueDay))
 	
 	// Validar splits

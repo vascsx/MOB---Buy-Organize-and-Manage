@@ -2,22 +2,6 @@ package models
 
 import "time"
 
-type ExpenseFrequency string
-
-const (
-	ExpenseMonthly ExpenseFrequency = "monthly"
-	ExpenseYearly  ExpenseFrequency = "yearly"
-	ExpenseOneTime ExpenseFrequency = "one_time"
-)
-
-type ExpenseType string
-
-const (
-	ExpenseTypeExpense         ExpenseType = "expense"
-	ExpenseTypeEmergencyReserve ExpenseType = "emergency_reserve"
-	ExpenseTypeInvestment      ExpenseType = "investment"
-)
-
 type Expense struct {
 	ID              uint             `gorm:"primaryKey" json:"id"`
 	FamilyAccountID uint             `gorm:"not null;index" json:"family_account_id"`
@@ -25,8 +9,6 @@ type Expense struct {
 	Name            string           `gorm:"not null" json:"name"` // ex: "Aluguel"
 	Description     string           `json:"description"`
 	AmountCents     int64            `gorm:"not null" json:"amount_cents"`
-	Frequency       ExpenseFrequency `gorm:"default:'monthly'" json:"frequency"`
-	ExpenseType     ExpenseType      `gorm:"default:'expense'" json:"expense_type"` // expense, emergency_reserve, investment
 	DueDay          int              `gorm:"default:1" json:"due_day"` // dia do vencimento (1-31)
 	IsFixed         bool             `gorm:"default:true" json:"is_fixed"`
 	IsActive        bool             `gorm:"default:true" json:"is_active"`
